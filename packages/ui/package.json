@@ -1,0 +1,9 @@
+{
+  "name": "@expression-editor/ui",
+  "private": true,
+  "version": "0.0.0",
+  "type": "module",
+  "dependencies": {
+    "@expression-editor/core": "0.0.0"
+  }
+}
