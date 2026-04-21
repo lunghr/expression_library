@@ -13,6 +13,14 @@ function serializeNode(
     return node.raw;
   }
 
+  if (node.kind === "Identifier") {
+    return node.name;
+  }
+
+  if (node.kind === "MemberExpression") {
+    return `${serializeReference(node.object)}.${node.member.name}`;
+  }
+
   const precedence = getOperatorPrecedence(node.operator);
   const left = serializeNode(node.left, precedence, "left");
   const right = serializeNode(node.right, precedence, "right");
@@ -27,6 +35,18 @@ function serializeNode(
   }
 
   return serialized;
+}
+
+function serializeReference(node: AnyExpressionNode): string {
+  if (node.kind === "Identifier") {
+    return node.name;
+  }
+
+  if (node.kind === "MemberExpression") {
+    return `${serializeReference(node.object)}.${node.member.name}`;
+  }
+
+  return `(${serializeNode(node, 0, "root")})`;
 }
 
 function getOperatorPrecedence(operator: BinaryOperator): number {

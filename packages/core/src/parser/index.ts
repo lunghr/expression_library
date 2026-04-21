@@ -3,8 +3,14 @@ import type {
   BinaryOperator,
   Diagnostic,
   ParseResult,
+  ReferenceExpressionNode,
 } from "../contracts/index.js";
-import { createBinaryExpression, createNumberLiteral } from "../ast/index.js";
+import {
+  createBinaryExpression,
+  createIdentifier,
+  createMemberExpression,
+  createNumberLiteral,
+} from "../ast/index.js";
 import { createDiagnostic } from "../diagnostics/index.js";
 import { tokenize, type Token } from "../lexer/index.js";
 
@@ -82,9 +88,52 @@ class Parser {
 
   private parseMultiplicative(): AnyExpressionNode | null {
     return this.parseLeftAssociative(
-      () => this.parsePrimary(),
+      () => this.parsePostfix(),
       ["Star", "Slash"],
     );
+  }
+
+  private parsePostfix(): AnyExpressionNode | null {
+    let expression = this.parsePrimary();
+
+    while (expression !== null && this.current().kind === "Dot") {
+      const dotToken = this.consume();
+
+      if (!this.isReferenceNode(expression)) {
+        this.diagnostics.push(
+          createDiagnostic(
+            "PAR007",
+            'Invalid identifier usage before ".".',
+            dotToken.span,
+          ),
+        );
+
+        if (this.current().kind === "Identifier") {
+          this.consume();
+        }
+
+        return expression;
+      }
+
+      if (this.current().kind !== "Identifier") {
+        this.diagnostics.push(
+          createDiagnostic(
+            "PAR006",
+            'Expected identifier after ".".',
+            dotToken.span,
+          ),
+        );
+        return expression;
+      }
+
+      const memberToken = this.consume();
+      expression = createMemberExpression(
+        expression,
+        createIdentifier(memberToken.lexeme, memberToken.span),
+      );
+    }
+
+    return expression;
   }
 
   private parsePrimary(): AnyExpressionNode | null {
@@ -93,6 +142,11 @@ class Parser {
     if (token.kind === "Number") {
       this.consume();
       return createNumberLiteral(token.lexeme, Number(token.lexeme), token.span);
+    }
+
+    if (token.kind === "Identifier") {
+      this.consume();
+      return createIdentifier(token.lexeme, token.span);
     }
 
     if (token.kind === "OpenParen") {
@@ -123,6 +177,17 @@ class Parser {
 
       this.consume();
       return expression;
+    }
+
+    if (token.kind === "Dot") {
+      this.diagnostics.push(
+        createDiagnostic(
+          "PAR005",
+          'Unexpected "." without a preceding reference.',
+          token.span,
+        ),
+      );
+      return null;
     }
 
     this.diagnostics.push(
@@ -220,5 +285,9 @@ class Parser {
       "AmpersandAmpersand",
       "PipePipe",
     ].includes(token.kind);
+  }
+
+  private isReferenceNode(node: AnyExpressionNode): node is ReferenceExpressionNode {
+    return node.kind === "Identifier" || node.kind === "MemberExpression";
   }
 }

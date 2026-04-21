@@ -4,10 +4,12 @@ import { createSourceSpan } from "../contracts/index.js";
 
 export type TokenKind =
   | "Number"
+  | "Identifier"
   | "Plus"
   | "Minus"
   | "Star"
   | "Slash"
+  | "Dot"
   | "OpenParen"
   | "CloseParen"
   | "EqualEqual"
@@ -67,6 +69,23 @@ export function tokenize(source: string): TokenizeResult {
 
       tokens.push({
         kind: "Number",
+        lexeme: source.slice(start, index),
+        span: createSourceSpan(start, index),
+      });
+
+      continue;
+    }
+
+    if (isIdentifierStart(character)) {
+      const start = index;
+      index += 1;
+
+      while (index < source.length && isIdentifierPart(source[index])) {
+        index += 1;
+      }
+
+      tokens.push({
+        kind: "Identifier",
         lexeme: source.slice(start, index),
         span: createSourceSpan(start, index),
       });
@@ -134,6 +153,18 @@ function isWhitespace(character: string): boolean {
   return character === " " || character === "\t" || character === "\n" || character === "\r";
 }
 
+function isIdentifierStart(character: string): boolean {
+  return (
+    (character >= "a" && character <= "z")
+    || (character >= "A" && character <= "Z")
+    || character === "_"
+  );
+}
+
+function isIdentifierPart(character: string): boolean {
+  return isIdentifierStart(character) || isDigit(character);
+}
+
 function readCompoundOperator(
   source: string,
   index: number,
@@ -168,6 +199,8 @@ function readSingleCharacterTokenKind(character: string): TokenKind | null {
       return "Star";
     case "/":
       return "Slash";
+    case ".":
+      return "Dot";
     case "(":
       return "OpenParen";
     case ")":

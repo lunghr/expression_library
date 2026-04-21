@@ -14,7 +14,11 @@ export interface Diagnostic {
 }
 
 export interface ExpressionNode {
-  readonly kind: "NumberLiteral" | "BinaryExpression";
+  readonly kind:
+    | "NumberLiteral"
+    | "Identifier"
+    | "MemberExpression"
+    | "BinaryExpression";
   readonly span: SourceSpan;
 }
 
@@ -38,6 +42,19 @@ export interface NumberLiteralNode extends ExpressionNode {
   readonly value: number;
 }
 
+export interface IdentifierNode extends ExpressionNode {
+  readonly kind: "Identifier";
+  readonly name: string;
+}
+
+export interface MemberExpressionNode extends ExpressionNode {
+  readonly kind: "MemberExpression";
+  readonly object: ReferenceExpressionNode;
+  readonly member: IdentifierNode;
+}
+
+export type ReferenceExpressionNode = IdentifierNode | MemberExpressionNode;
+
 export interface BinaryExpressionNode extends ExpressionNode {
   readonly kind: "BinaryExpression";
   readonly operator: BinaryOperator;
@@ -46,7 +63,11 @@ export interface BinaryExpressionNode extends ExpressionNode {
   readonly right: AnyExpressionNode;
 }
 
-export type AnyExpressionNode = NumberLiteralNode | BinaryExpressionNode;
+export type AnyExpressionNode =
+  | NumberLiteralNode
+  | IdentifierNode
+  | MemberExpressionNode
+  | BinaryExpressionNode;
 
 export interface ParseResult {
   readonly root: AnyExpressionNode | null;
