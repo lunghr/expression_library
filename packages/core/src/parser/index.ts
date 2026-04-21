@@ -12,7 +12,7 @@ import {
   createNumberLiteral,
 } from "../ast/index.js";
 import { createDiagnostic } from "../diagnostics/index.js";
-import { tokenize, type Token } from "../lexer/index.js";
+import { type Token, tokenize } from "../lexer/index.js";
 
 export type { ParseResult };
 
@@ -44,7 +44,8 @@ class Parser {
   public constructor(
     private readonly tokens: readonly Token[],
     private readonly diagnostics: Diagnostic[],
-  ) {}
+  ) {
+  }
 
   public current(): Token {
     this.skipTrivia();

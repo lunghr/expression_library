@@ -4,7 +4,7 @@ export interface SourceSpan {
 }
 
 export function createSourceSpan(start: number, end: number): SourceSpan {
-  return { start, end };
+  return {start, end};
 }
 
 export interface Diagnostic {

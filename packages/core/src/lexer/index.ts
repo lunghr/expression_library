@@ -1,6 +1,6 @@
 import type { Diagnostic, SourceSpan } from "../contracts/index.js";
-import { createDiagnostic } from "../diagnostics/index.js";
 import { createSourceSpan } from "../contracts/index.js";
+import { createDiagnostic } from "../diagnostics/index.js";
 
 export type TokenKind =
   | "Number"
@@ -173,17 +173,17 @@ function readCompoundOperator(
 
   switch (lexeme) {
     case "==":
-      return { kind: "EqualEqual", lexeme };
+      return {kind: "EqualEqual", lexeme};
     case "!=":
-      return { kind: "BangEqual", lexeme };
+      return {kind: "BangEqual", lexeme};
     case "<=":
-      return { kind: "LessEqual", lexeme };
+      return {kind: "LessEqual", lexeme};
     case ">=":
-      return { kind: "GreaterEqual", lexeme };
+      return {kind: "GreaterEqual", lexeme};
     case "&&":
-      return { kind: "AmpersandAmpersand", lexeme };
+      return {kind: "AmpersandAmpersand", lexeme};
     case "||":
-      return { kind: "PipePipe", lexeme };
+      return {kind: "PipePipe", lexeme};
     default:
       return null;
   }
