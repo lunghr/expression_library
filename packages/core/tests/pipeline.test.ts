@@ -24,23 +24,39 @@ describe("core expression pipeline", () => {
     expect(result.root ? serializeExpression(result.root) : undefined).toBe("1 + 2");
   });
 
-  it('parses and serializes "1 + 2 + 3" as left-associative addition', () => {
-    const result = parseExpression("1 + 2 + 3");
-
-    expect(result.diagnostics).toHaveLength(0);
-    expect(result.root?.kind).toBe("BinaryExpression");
-    expect(result.root?.kind === "BinaryExpression" ? result.root.left.kind : undefined).toBe("BinaryExpression");
-    expect(result.root?.kind === "BinaryExpression" ? result.root.right.kind : undefined).toBe("NumberLiteral");
-    expect(result.root ? serializeExpression(result.root) : undefined).toBe("1 + 2 + 3");
-  });
-
-  it("tokenizes whitespace explicitly for the handwritten slice", () => {
-    const result = tokenize("1 + 2");
+  it("tokenizes operator set", () => {
+    const result = tokenize("1 * (2 + 3) >= 4 && 5 != 6 || 7 / 8");
 
     expect(result.tokens.map((token) => token.kind)).toEqual([
       "Number",
       "Whitespace",
+      "Star",
+      "Whitespace",
+      "OpenParen",
+      "Number",
+      "Whitespace",
       "Plus",
+      "Whitespace",
+      "Number",
+      "CloseParen",
+      "Whitespace",
+      "GreaterEqual",
+      "Whitespace",
+      "Number",
+      "Whitespace",
+      "AmpersandAmpersand",
+      "Whitespace",
+      "Number",
+      "Whitespace",
+      "BangEqual",
+      "Whitespace",
+      "Number",
+      "Whitespace",
+      "PipePipe",
+      "Whitespace",
+      "Number",
+      "Whitespace",
+      "Slash",
       "Whitespace",
       "Number",
       "End",
@@ -63,10 +79,73 @@ describe("core expression pipeline", () => {
     expect(result.diagnostics[0]?.span).toEqual({ start: 4, end: 5 });
   });
 
-  it("reports a parser diagnostic for an incomplete addition", () => {
+  it("parses arithmetic precedence correctly", () => {
+    const result = parseExpression("1 + 2 * 3");
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.root?.kind).toBe("BinaryExpression");
+    expect(result.root?.kind === "BinaryExpression" ? result.root.operator : undefined).toBe("+");
+    expect(result.root?.kind === "BinaryExpression" ? result.root.right.kind : undefined).toBe("BinaryExpression");
+    expect(
+      result.root?.kind === "BinaryExpression" && result.root.right.kind === "BinaryExpression"
+        ? result.root.right.operator
+        : undefined,
+    ).toBe("*");
+    expect(result.root ? serializeExpression(result.root) : undefined).toBe("1 + 2 * 3");
+  });
+
+  it("parses parentheses and preserves them during serialization", () => {
+    const result = parseExpression("(1 + 2) * 3");
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.root?.kind).toBe("BinaryExpression");
+    expect(result.root?.kind === "BinaryExpression" ? result.root.operator : undefined).toBe("*");
+    expect(result.root ? serializeExpression(result.root) : undefined).toBe("(1 + 2) * 3");
+  });
+
+  it("parses comparison and logical precedence correctly", () => {
+    const result = parseExpression("1 + 2 * 3 >= 4 && 5 != 6 || 7 < 8");
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.root?.kind).toBe("BinaryExpression");
+    expect(result.root?.kind === "BinaryExpression" ? result.root.operator : undefined).toBe("||");
+    expect(result.root ? serializeExpression(result.root) : undefined).toBe("1 + 2 * 3 >= 4 && 5 != 6 || 7 < 8");
+  });
+
+  it("keeps subtraction left-associative", () => {
+    const result = parseExpression("10 - 3 - 2");
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.root?.kind).toBe("BinaryExpression");
+    expect(result.root?.kind === "BinaryExpression" ? result.root.left.kind : undefined).toBe("BinaryExpression");
+    expect(result.root ? serializeExpression(result.root) : undefined).toBe("10 - 3 - 2");
+  });
+
+  it("reports a trailing operator", () => {
     const result = parseExpression("1 +");
 
     expect(result.root?.kind).toBe("NumberLiteral");
-    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR000", "PAR001"]);
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR000", "PAR004"]);
+  });
+
+  it("reports a missing closing parenthesis", () => {
+    const result = parseExpression("(1 + 2");
+
+    expect(result.root?.kind).toBe("BinaryExpression");
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR002"]);
+  });
+
+  it("reports an unexpected token at expression start", () => {
+    const result = parseExpression("&& 1");
+
+    expect(result.root).toBeNull();
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR000"]);
+  });
+
+  it("reports a missing operand after a binary operator", () => {
+    const result = parseExpression("1 * )");
+
+    expect(result.root?.kind).toBe("NumberLiteral");
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR000", "PAR001", "PAR003"]);
   });
 });

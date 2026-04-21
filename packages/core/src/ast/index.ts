@@ -1,6 +1,7 @@
 import type {
   AnyExpressionNode,
   BinaryExpressionNode,
+  BinaryOperator,
   ExpressionNode,
   NumberLiteralNode,
   SourceSpan,
@@ -29,12 +30,13 @@ export function createNumberLiteral(
 
 export function createBinaryExpression(
   left: AnyExpressionNode,
+  operator: BinaryOperator,
   operatorSpan: SourceSpan,
   right: AnyExpressionNode,
 ): BinaryExpressionNode {
   return {
     kind: "BinaryExpression",
-    operator: "+",
+    operator,
     operatorSpan,
     left,
     right,

@@ -18,6 +18,20 @@ export interface ExpressionNode {
   readonly span: SourceSpan;
 }
 
+export type BinaryOperator =
+  | "+"
+  | "-"
+  | "*"
+  | "/"
+  | "=="
+  | "!="
+  | "<"
+  | "<="
+  | ">"
+  | ">="
+  | "&&"
+  | "||";
+
 export interface NumberLiteralNode extends ExpressionNode {
   readonly kind: "NumberLiteral";
   readonly raw: string;
@@ -26,7 +40,7 @@ export interface NumberLiteralNode extends ExpressionNode {
 
 export interface BinaryExpressionNode extends ExpressionNode {
   readonly kind: "BinaryExpression";
-  readonly operator: "+";
+  readonly operator: BinaryOperator;
   readonly operatorSpan: SourceSpan;
   readonly left: AnyExpressionNode;
   readonly right: AnyExpressionNode;

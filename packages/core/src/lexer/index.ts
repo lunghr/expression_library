@@ -2,7 +2,25 @@ import type { Diagnostic, SourceSpan } from "../contracts/index.js";
 import { createDiagnostic } from "../diagnostics/index.js";
 import { createSourceSpan } from "../contracts/index.js";
 
-export type TokenKind = "Number" | "Plus" | "Whitespace" | "Invalid" | "End";
+export type TokenKind =
+  | "Number"
+  | "Plus"
+  | "Minus"
+  | "Star"
+  | "Slash"
+  | "OpenParen"
+  | "CloseParen"
+  | "EqualEqual"
+  | "BangEqual"
+  | "Less"
+  | "LessEqual"
+  | "Greater"
+  | "GreaterEqual"
+  | "AmpersandAmpersand"
+  | "PipePipe"
+  | "Whitespace"
+  | "Invalid"
+  | "End";
 
 export interface Token {
   readonly kind: TokenKind;
@@ -56,9 +74,23 @@ export function tokenize(source: string): TokenizeResult {
       continue;
     }
 
-    if (character === "+") {
+    const compoundOperator = readCompoundOperator(source, index);
+
+    if (compoundOperator !== null) {
       tokens.push({
-        kind: "Plus",
+        kind: compoundOperator.kind,
+        lexeme: compoundOperator.lexeme,
+        span: createSourceSpan(index, index + compoundOperator.lexeme.length),
+      });
+      index += compoundOperator.lexeme.length;
+      continue;
+    }
+
+    const singleCharacterTokenKind = readSingleCharacterTokenKind(character);
+
+    if (singleCharacterTokenKind !== null) {
+      tokens.push({
+        kind: singleCharacterTokenKind,
         lexeme: character,
         span: createSourceSpan(index, index + 1),
       });
@@ -100,4 +132,51 @@ function isDigit(character: string): boolean {
 
 function isWhitespace(character: string): boolean {
   return character === " " || character === "\t" || character === "\n" || character === "\r";
+}
+
+function readCompoundOperator(
+  source: string,
+  index: number,
+): { kind: TokenKind; lexeme: string } | null {
+  const lexeme = source.slice(index, index + 2);
+
+  switch (lexeme) {
+    case "==":
+      return { kind: "EqualEqual", lexeme };
+    case "!=":
+      return { kind: "BangEqual", lexeme };
+    case "<=":
+      return { kind: "LessEqual", lexeme };
+    case ">=":
+      return { kind: "GreaterEqual", lexeme };
+    case "&&":
+      return { kind: "AmpersandAmpersand", lexeme };
+    case "||":
+      return { kind: "PipePipe", lexeme };
+    default:
+      return null;
+  }
+}
+
+function readSingleCharacterTokenKind(character: string): TokenKind | null {
+  switch (character) {
+    case "+":
+      return "Plus";
+    case "-":
+      return "Minus";
+    case "*":
+      return "Star";
+    case "/":
+      return "Slash";
+    case "(":
+      return "OpenParen";
+    case ")":
+      return "CloseParen";
+    case "<":
+      return "Less";
+    case ">":
+      return "Greater";
+    default:
+      return null;
+  }
 }
