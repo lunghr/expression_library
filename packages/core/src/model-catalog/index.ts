@@ -1,8 +1,3 @@
-export interface ModelCatalogEntry {
-  readonly id: string;
-  readonly label: string;
-}
+export type { ModelCatalog } from "./catalog.js";
 
-export interface ModelCatalog {
-  readonly entries: readonly ModelCatalogEntry[];
-}
+export { createModelCatalog } from "./catalog.js";

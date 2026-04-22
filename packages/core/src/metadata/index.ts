@@ -1,9 +1,14 @@
-export interface MetadataFieldDefinition {
-  readonly name: string;
-  readonly type: string;
-}
+export type {
+  LoadedMetadataDocument,
+  MetadataField,
+  MetadataModel,
+  MetadataValueKind,
+  ProjectMetadataDocument,
+  ProjectModelSchema,
+  ProjectObjectSchemaNode,
+  ProjectScalarSchemaNode,
+  ProjectScalarSchemaType,
+  ProjectSchemaNode,
+} from "./contracts.js";
 
-export interface MetadataSchema {
-  readonly version: string;
-  readonly fields: readonly MetadataFieldDefinition[];
-}
+export { loadMetadataDocument } from "./load-model-schemas.js";
