@@ -1,7 +1,32 @@
 import { describe, expect, it } from "vitest";
 
-import { parseExpression, serializeExpression } from "../src/index.js";
+import {
+  createModelCatalog,
+  loadMetadataDocument,
+  parseExpression,
+  processExpression,
+  serializeExpression,
+} from "../src/index.js";
 import { tokenize } from "../src/lexer/index.js";
+
+function createTestCatalog() {
+  return createModelCatalog(
+    loadMetadataDocument({
+      models: [
+        {
+          name: "User",
+          schema: {
+            type: "object",
+            properties: {
+              age: {type: "number"},
+              active: {type: "boolean"},
+            },
+          },
+        },
+      ],
+    }),
+  );
+}
 
 describe("core expression pipeline", () => {
   it('parses and serializes "1"', () => {
@@ -213,5 +238,32 @@ describe("core expression pipeline", () => {
 
     expect(result.root?.kind).toBe("NumberLiteral");
     expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR007"]);
+  });
+
+  it("processes a full valid expression through the unified core pipeline", () => {
+    const result = processExpression("User.age > 18 && User.active", createTestCatalog());
+
+    expect(result.root?.kind).toBe("BinaryExpression");
+    expect(result.boundRoot?.kind).toBe("BoundBinaryExpression");
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.serialized).toBe("User.age > 18 && User.active");
+  });
+
+  it("returns canonical serialization even when semantic diagnostics exist", () => {
+    const result = processExpression("User.age + User.active", createTestCatalog());
+
+    expect(result.root?.kind).toBe("BinaryExpression");
+    expect(result.boundRoot?.kind).toBe("BoundBinaryExpression");
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM004"]);
+    expect(result.serialized).toBe("User.age + User.active");
+  });
+
+  it("returns no serialization when parsing fails to produce a root", () => {
+    const result = processExpression("&& 1", createTestCatalog());
+
+    expect(result.root).toBeNull();
+    expect(result.boundRoot).toBeNull();
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR000"]);
+    expect(result.serialized).toBeNull();
   });
 });
