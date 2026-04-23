@@ -8,6 +8,8 @@ export interface ModelCatalog {
   getField(modelName: string, fieldName: string): MetadataField | null;
 
   getFieldByPath(modelName: string, path: readonly string[]): MetadataField | null;
+
+  getChildField(parentField: MetadataField, fieldName: string): MetadataField | null;
 }
 
 export function createModelCatalog(
@@ -47,6 +49,13 @@ export function createModelCatalog(
       }
 
       return currentField;
+    },
+    getChildField(parentField: MetadataField, fieldName: string): MetadataField | null {
+      if (parentField.kind !== "object") {
+        return null;
+      }
+
+      return parentField.fields.find((field) => field.name === fieldName) ?? null;
     },
   };
 }

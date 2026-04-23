@@ -1,7 +1,13 @@
-export interface BoundNode {
-  readonly kind: string;
-}
+export type {
+  AnyBoundExpressionNode,
+  BindingResult,
+  BoundBinaryExpressionNode,
+  BoundExpressionNode,
+  BoundIdentifierNode,
+  BoundMemberExpressionNode,
+  BoundNumberLiteralNode,
+  BoundReferenceNode,
+  ExpressionValueType,
+} from "./contracts.js";
 
-export interface BindingResult<TNode = BoundNode> {
-  readonly root: TNode | null;
-}
+export { bindExpression } from "./bind-expression.js";
