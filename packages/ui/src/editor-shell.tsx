@@ -1,7 +1,6 @@
+import type { ModelCatalog } from "@expression-editor/core";
 import type { CSSProperties } from "react";
-import { useMemo } from "react";
 
-import { createDemoCatalog } from "./demo-catalog.js";
 import { DiagnosticsPanel } from "./diagnostics-panel.js";
 import { useEditorState } from "./editor-state.js";
 import { ResultPanel } from "./result-panel.js";
@@ -21,17 +20,18 @@ const panelStyle = {
 } satisfies CSSProperties;
 
 export interface EditorShellProps {
+  readonly catalog: ModelCatalog;
   readonly initialValue?: string;
   readonly value?: string;
   readonly onValueChange?: (value: string) => void;
 }
 
 export function EditorShell({
+  catalog,
   initialValue = "User.age > 18 && User.active",
   value,
   onValueChange,
 }: EditorShellProps) {
-  const catalog = useMemo(() => createDemoCatalog(), []);
   const editorState = useEditorState({
     catalog,
     initialText: initialValue,

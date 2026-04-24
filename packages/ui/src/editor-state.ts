@@ -59,6 +59,7 @@ export function useEditorState({
     if (value === undefined) {
       setTextState(nextText);
     }
+
     onValueChange?.(nextText);
   }
 
