@@ -2,6 +2,7 @@ export * from "./contracts/index.js";
 export * from "./core/index.js";
 export * from "./metadata/index.js";
 export * from "./model-catalog/index.js";
+export * from "./suggestions/index.js";
 export * from "./lexer/index.js";
 export * from "./parser/index.js";
 export * from "./ast/index.js";
