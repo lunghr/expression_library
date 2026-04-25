@@ -8,6 +8,7 @@
     "dev": "vite"
   },
   "dependencies": {
+    "@expression-editor/adapters": "0.0.0",
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.6",
     "codemirror": "^6.0.1",

@@ -14,7 +14,7 @@ test("user can enter an expression and see diagnostics", async ({ page }) => {
   const editor = page.getByTestId("expression-editor").locator(".cm-content");
 
   await editor.click();
-  await page.keyboard.press(process.platform === "darwin" ? "Meta+A" : "Control+A");
+  await page.keyboard.press("Control+A");
   await page.keyboard.type("User.age + User.active");
 
   await expect(page.getByTestId("processing-state")).toContainText("Semantic Error");
