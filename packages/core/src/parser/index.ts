@@ -1,6 +1,5 @@
 import type {
   AnyExpressionNode,
-  BinaryOperator,
   Diagnostic,
   ParseResult,
   ReferenceExpressionNode,
@@ -12,6 +11,11 @@ import {
   createNumberLiteral,
 } from "../ast/index.js";
 import { createDiagnostic } from "../diagnostics/index.js";
+import {
+  getBinaryOperatorDefinitionByTokenKind,
+  isBinaryOperatorTokenKind,
+  type OperatorDefinition,
+} from "../operator-registry/index.js";
 import { type Token, tokenize } from "../lexer/index.js";
 
 export type { ParseResult };
@@ -20,7 +24,7 @@ export function parseExpression(source: string): ParseResult {
   const tokenized = tokenize(source);
   const diagnostics: Diagnostic[] = [...tokenized.diagnostics];
   const parser = new Parser(tokenized.tokens, diagnostics);
-  const root = parser.parseLogicalOr();
+  const root = parser.parseBinaryExpression(0);
 
   if (root !== null && parser.current().kind !== "End") {
     diagnostics.push(
@@ -52,46 +56,48 @@ class Parser {
     return this.tokens[this.index] ?? this.tokens[this.tokens.length - 1];
   }
 
-  public parseLogicalOr(): AnyExpressionNode | null {
-    return this.parseLeftAssociative(
-      () => this.parseLogicalAnd(),
-      ["PipePipe"],
-    );
-  }
+  public parseBinaryExpression(minPrecedence: number): AnyExpressionNode | null {
+    let left = this.parsePostfix();
 
-  private parseLogicalAnd(): AnyExpressionNode | null {
-    return this.parseLeftAssociative(
-      () => this.parseEquality(),
-      ["AmpersandAmpersand"],
-    );
-  }
+    while (left !== null) {
+      const operatorToken = this.current();
+      const operator = getBinaryOperatorDefinitionByTokenKind(operatorToken.kind);
 
-  private parseEquality(): AnyExpressionNode | null {
-    return this.parseLeftAssociative(
-      () => this.parseComparison(),
-      ["EqualEqual", "BangEqual"],
-    );
-  }
+      if (operator === null || operator.precedence < minPrecedence) {
+        break;
+      }
 
-  private parseComparison(): AnyExpressionNode | null {
-    return this.parseLeftAssociative(
-      () => this.parseAdditive(),
-      ["Less", "LessEqual", "Greater", "GreaterEqual"],
-    );
-  }
+      this.consume();
 
-  private parseAdditive(): AnyExpressionNode | null {
-    return this.parseLeftAssociative(
-      () => this.parseMultiplicative(),
-      ["Plus", "Minus"],
-    );
-  }
+      const nextMinPrecedence = operator.associativity === "left"
+        ? operator.precedence + 1
+        : operator.precedence;
+      const right = this.parseBinaryExpression(nextMinPrecedence);
 
-  private parseMultiplicative(): AnyExpressionNode | null {
-    return this.parseLeftAssociative(
-      () => this.parsePostfix(),
-      ["Star", "Slash"],
-    );
+      if (right === null) {
+        this.diagnostics.push(
+          createDiagnostic(
+            this.current().kind === "End"
+              ? "PAR004"
+              : "PAR001",
+            this.current().kind === "End"
+              ? `Trailing operator "${operatorToken.lexeme}".`
+              : `Expected expression after "${operatorToken.lexeme}".`,
+            operatorToken.span,
+          ),
+        );
+        return left;
+      }
+
+      left = createBinaryExpression(
+        left,
+        operator.symbol,
+        operatorToken.span,
+        right,
+      );
+    }
+
+    return left;
   }
 
   private parsePostfix(): AnyExpressionNode | null {
@@ -152,7 +158,7 @@ class Parser {
 
     if (token.kind === "OpenParen") {
       const openParen = this.consume();
-      const expression = this.parseLogicalOr();
+      const expression = this.parseBinaryExpression(0);
 
       if (expression === null) {
         this.diagnostics.push(
@@ -215,77 +221,8 @@ class Parser {
     }
   }
 
-  private parseLeftAssociative(
-    parseOperand: () => AnyExpressionNode | null,
-    operatorKinds: readonly Token["kind"][],
-  ): AnyExpressionNode | null {
-    let left = parseOperand();
-
-    while (left !== null && operatorKinds.includes(this.current().kind)) {
-      const operatorToken = this.consume();
-      const right = parseOperand();
-
-      if (right === null) {
-        this.diagnostics.push(
-          createDiagnostic(
-            this.current().kind === "End"
-              ? "PAR004"
-              : "PAR001",
-            this.current().kind === "End"
-              ? `Trailing operator "${operatorToken.lexeme}".`
-              : `Expected expression after "${operatorToken.lexeme}".`,
-            operatorToken.span,
-          ),
-        );
-        return left;
-      }
-
-      left = createBinaryExpression(
-        left,
-        this.getBinaryOperator(operatorToken),
-        operatorToken.span,
-        right,
-      );
-    }
-
-    return left;
-  }
-
-  private getBinaryOperator(token: Token): BinaryOperator {
-    switch (token.kind) {
-      case "Plus":
-      case "Minus":
-      case "Star":
-      case "Slash":
-      case "EqualEqual":
-      case "BangEqual":
-      case "Less":
-      case "LessEqual":
-      case "Greater":
-      case "GreaterEqual":
-      case "AmpersandAmpersand":
-      case "PipePipe":
-        return token.lexeme as BinaryOperator;
-      default:
-        throw new Error(`Token ${token.kind} is not a supported binary operator.`);
-    }
-  }
-
-  private isBinaryOperatorToken(token: Token): boolean {
-    return [
-      "Plus",
-      "Minus",
-      "Star",
-      "Slash",
-      "EqualEqual",
-      "BangEqual",
-      "Less",
-      "LessEqual",
-      "Greater",
-      "GreaterEqual",
-      "AmpersandAmpersand",
-      "PipePipe",
-    ].includes(token.kind);
+  private isBinaryOperatorToken(token: Token): token is Token & { kind: OperatorDefinition["tokenKind"] } {
+    return isBinaryOperatorTokenKind(token.kind);
   }
 
   private isReferenceNode(node: AnyExpressionNode): node is ReferenceExpressionNode {

@@ -1,4 +1,5 @@
 import type { BinaryOperator } from "../contracts/index.js";
+import { getBinaryOperatorDefinitionBySymbol } from "../operator-registry/index.js";
 
 import type { ExpressionValueType } from "./contracts.js";
 
@@ -19,31 +20,29 @@ export function getBinaryOperatorTypeRule(
     };
   }
 
-  switch (operator) {
-    case "+":
-    case "-":
-    case "*":
-    case "/":
+  const definition = getBinaryOperatorDefinitionBySymbol(operator);
+
+  if (definition === null) {
+    throw new Error(`Unsupported binary operator "${operator}".`);
+  }
+
+  switch (definition.category) {
+    case "arithmetic":
       return leftType === "number" && rightType === "number"
         ? {resultType: "number", isCompatible: true}
         : {resultType: "unknown", isCompatible: false};
 
-    case "<":
-    case "<=":
-    case ">":
-    case ">=":
+    case "comparison":
       return leftType === "number" && rightType === "number"
         ? {resultType: "boolean", isCompatible: true}
         : {resultType: "unknown", isCompatible: false};
 
-    case "&&":
-    case "||":
+    case "logical":
       return leftType === "boolean" && rightType === "boolean"
         ? {resultType: "boolean", isCompatible: true}
         : {resultType: "unknown", isCompatible: false};
 
-    case "==":
-    case "!=":
+    case "equality":
       return leftType === rightType && isPrimitiveComparableType(leftType)
         ? {resultType: "boolean", isCompatible: true}
         : {resultType: "unknown", isCompatible: false};

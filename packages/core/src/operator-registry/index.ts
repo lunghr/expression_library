@@ -1,8 +1,13 @@
-export interface OperatorDefinition {
-  readonly symbol: string;
-  readonly precedence: number;
-}
-
-export interface OperatorRegistry {
-  readonly operators: readonly OperatorDefinition[];
-}
+export type {
+  OperatorAssociativity,
+  OperatorCategory,
+  OperatorDefinition,
+  OperatorRegistry,
+} from "./contracts.js";
+export {
+  getBinaryOperatorDefinitionBySymbol,
+  getBinaryOperatorDefinitionByTokenKind,
+  isBinaryOperatorTokenKind,
+  listBinaryOperatorDefinitions,
+  operatorRegistry,
+} from "./registry.js";

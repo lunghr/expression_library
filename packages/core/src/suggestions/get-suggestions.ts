@@ -1,21 +1,7 @@
 import type { ModelCatalog } from "../model-catalog/index.js";
+import { listBinaryOperatorDefinitions } from "../operator-registry/index.js";
 
 import type { SuggestionItem, SuggestionResult } from "./contracts.js";
-
-const operatorSuggestions = [
-  "+",
-  "-",
-  "*",
-  "/",
-  "==",
-  "!=",
-  "<",
-  "<=",
-  ">",
-  ">=",
-  "&&",
-  "||",
-] as const;
 
 export function getSuggestions(
   source: string,
@@ -48,9 +34,9 @@ export function getSuggestions(
 
   if (shouldSuggestOperators(beforeCursor)) {
     return {
-      items: operatorSuggestions.map((operator) => ({
+      items: listBinaryOperatorDefinitions().map((operator) => ({
         kind: "operator",
-        label: operator,
+        label: operator.symbol,
       })),
     };
   }
