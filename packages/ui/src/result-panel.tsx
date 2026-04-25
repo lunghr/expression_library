@@ -13,12 +13,12 @@ export interface ResultPanelProps {
 export function ResultPanel({result}: ResultPanelProps) {
   return (
     <>
-      <div style={panelStyle}>
+      <div data-testid="processing-state" style={panelStyle}>
         <div>Processing State</div>
         <div>{getStateLabel(result.status)}</div>
       </div>
 
-      <div style={panelStyle}>
+      <div data-testid="canonical-output" style={panelStyle}>
         <div>Canonical Output</div>
         <div>{result.expression ?? "(none)"}</div>
       </div>

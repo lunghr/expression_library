@@ -12,7 +12,7 @@ export interface DiagnosticsPanelProps {
 
 export function DiagnosticsPanel({ diagnostics }: DiagnosticsPanelProps) {
   return (
-    <div style={panelStyle}>
+    <div data-testid="diagnostics-panel" style={panelStyle}>
       <div>Diagnostics ({diagnostics.length})</div>
       {diagnostics.length === 0 ? (
         <div>No diagnostics.</div>

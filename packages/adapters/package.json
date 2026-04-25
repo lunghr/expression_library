@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -b",
-    "test": "vitest run"
+    "test": "vitest run tests/metadata-provider.test.ts tests/host-application.test.ts --pool vmThreads"
   },
   "dependencies": {
     "@expression-editor/core": "0.0.0"

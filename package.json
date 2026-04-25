@@ -6,9 +6,18 @@
     "packages/*"
   ],
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "dev:ui": "npm run dev --workspace @expression-editor/ui -- --host 127.0.0.1 --port 4173",
+    "lint": "eslint .",
+    "test:e2e": "playwright test",
+    "test:unit": "npm run test --workspace @expression-editor/core && npm run test --workspace @expression-editor/adapters"
   },
   "devDependencies": {
-    "typescript": "^5.8.2"
+    "@eslint/js": "^9.25.1",
+    "@playwright/test": "^1.53.1",
+    "eslint": "^9.25.1",
+    "globals": "^16.0.0",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.30.1"
   }
 }

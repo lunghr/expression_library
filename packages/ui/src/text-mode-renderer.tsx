@@ -109,5 +109,5 @@ export function TextModeRenderer({text, cursor, onTextChange, onCursorChange}: T
     });
   }, [cursor, text]);
 
-  return <div ref={hostRef} style={editorHostStyle}/>;
+  return <div data-testid="expression-editor" ref={hostRef} style={editorHostStyle}/>;
 }
