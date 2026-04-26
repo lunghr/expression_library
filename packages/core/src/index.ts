@@ -10,3 +10,4 @@ export * from "./binder/index.js";
 export * from "./diagnostics/index.js";
 export * from "./serializer/index.js";
 export * from "./operator-registry/index.js";
+export * from "./preview/index.js";

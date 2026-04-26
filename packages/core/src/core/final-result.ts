@@ -1,5 +1,6 @@
 import type { Diagnostic } from "../contracts/index.js";
 import type { ModelCatalog } from "../model-catalog/index.js";
+import type { PreviewContext, PreviewResult } from "../preview/index.js";
 
 import { processExpression } from "./process-expression.js";
 
@@ -13,19 +14,22 @@ export interface ProcessedExpressionResult {
   readonly status: ProcessedExpressionStatus;
   readonly diagnostics: readonly Diagnostic[];
   readonly expression: string | null;
+  readonly preview: PreviewResult | null;
 }
 
 export function processExpressionResult(
   source: string,
   catalog: ModelCatalog,
+  previewContext?: PreviewContext,
 ): ProcessedExpressionResult {
-  const result = processExpression(source, catalog);
+  const result = processExpression(source, catalog, {previewContext});
 
   return {
     source,
     status: getProcessedExpressionStatus(result.diagnostics),
     diagnostics: result.diagnostics,
     expression: result.serialized,
+    preview: result.preview,
   };
 }
 

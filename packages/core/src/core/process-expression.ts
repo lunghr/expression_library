@@ -1,16 +1,21 @@
 import { bindExpression } from "../binder/index.js";
 import type { ModelCatalog } from "../model-catalog/index.js";
 import { parseExpression } from "../parser/index.js";
+import { evaluatePreview } from "../preview/index.js";
 import { serializeExpression } from "../serializer/index.js";
 
-import type { ProcessExpressionResult } from "./contracts.js";
+import type { ProcessExpressionOptions, ProcessExpressionResult } from "./contracts.js";
 
 export function processExpression(
   source: string,
   catalog: ModelCatalog,
+  options: ProcessExpressionOptions = {},
 ): ProcessExpressionResult {
   const parsed = parseExpression(source);
   const binding = bindExpression(parsed.root, catalog);
+  const preview = options.previewContext === undefined
+    ? null
+    : evaluatePreview(binding.root, options.previewContext);
 
   return {
     source,
@@ -18,5 +23,6 @@ export function processExpression(
     boundRoot: binding.root,
     diagnostics: [...parsed.diagnostics, ...binding.diagnostics],
     serialized: parsed.root === null ? null : serializeExpression(parsed.root),
+    preview,
   };
 }

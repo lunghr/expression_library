@@ -1,4 +1,4 @@
-export type { ProcessExpressionResult } from "./contracts.js";
+export type { ProcessExpressionOptions, ProcessExpressionResult } from "./contracts.js";
 export type {
   ProcessedExpressionResult,
   ProcessedExpressionStatus,
