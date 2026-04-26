@@ -6,6 +6,7 @@ import type {
 } from "../contracts/index.js";
 import {
   createBinaryExpression,
+  createFunctionCall,
   createIdentifier,
   createMemberExpression,
   createNumberLiteral,
@@ -153,7 +154,13 @@ class Parser {
 
     if (token.kind === "Identifier") {
       this.consume();
-      return createIdentifier(token.lexeme, token.span);
+      const functionName = createIdentifier(token.lexeme, token.span);
+
+      if (this.current().kind === "OpenParen") {
+        return this.parseFunctionCall(functionName);
+      }
+
+      return functionName;
     }
 
     if (token.kind === "OpenParen") {
@@ -207,6 +214,41 @@ class Parser {
       ),
     );
     return null;
+  }
+
+  private parseFunctionCall(functionName: ReturnType<typeof createIdentifier>): AnyExpressionNode {
+    this.consume();
+    const argumentsList: AnyExpressionNode[] = [];
+
+    while (this.current().kind !== "CloseParen" && this.current().kind !== "End") {
+      const argument = this.parseBinaryExpression(0);
+
+      if (argument !== null) {
+        argumentsList.push(argument);
+      }
+
+      if (this.current().kind === "Comma") {
+        this.consume();
+        continue;
+      }
+
+      break;
+    }
+
+    if (this.current().kind !== "CloseParen") {
+      this.diagnostics.push(
+        createDiagnostic(
+          "PAR002",
+          'Expected closing ")" after expression.',
+          functionName.span,
+        ),
+      );
+
+      return createFunctionCall(functionName, argumentsList, functionName.span);
+    }
+
+    const closingParen = this.consume();
+    return createFunctionCall(functionName, argumentsList, closingParen.span);
   }
 
   private consume(): Token {

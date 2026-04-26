@@ -3,6 +3,7 @@ export type {
   BindingResult,
   BoundBinaryExpressionNode,
   BoundExpressionNode,
+  BoundFunctionCallNode,
   BoundIdentifierNode,
   BoundMemberExpressionNode,
   BoundNumberLiteralNode,

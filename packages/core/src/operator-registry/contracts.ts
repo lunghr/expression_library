@@ -20,3 +20,20 @@ export interface OperatorDefinition {
 export interface OperatorRegistry {
   readonly operators: readonly OperatorDefinition[];
 }
+
+export type BuiltInFunctionName = "sum" | "avg" | "count";
+
+export type BuiltInFunctionArgumentType =
+  | "number"
+  | "boolean"
+  | "string"
+  | "object"
+  | "any";
+
+export interface BuiltInFunctionDefinition {
+  readonly name: BuiltInFunctionName;
+  readonly minArgumentCount: number;
+  readonly maxArgumentCount: number;
+  readonly argumentTypes: readonly BuiltInFunctionArgumentType[];
+  readonly returnType: Exclude<BuiltInFunctionArgumentType, "any">;
+}

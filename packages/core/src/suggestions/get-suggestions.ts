@@ -1,5 +1,8 @@
 import type { ModelCatalog } from "../model-catalog/index.js";
-import { listBinaryOperatorDefinitions } from "../operator-registry/index.js";
+import {
+  listBinaryOperatorDefinitions,
+  listBuiltInFunctionDefinitions,
+} from "../operator-registry/index.js";
 
 import type { SuggestionItem, SuggestionResult } from "./contracts.js";
 
@@ -23,12 +26,20 @@ export function getSuggestions(
 
   if (modelPrefix !== null) {
     return {
-      items: catalog.models
-        .filter((model) => model.name.startsWith(modelPrefix))
-        .map((model) => ({
-          kind: "model",
-          label: model.name,
-        })),
+      items: [
+        ...catalog.models
+          .filter((model) => model.name.startsWith(modelPrefix))
+          .map((model) => ({
+            kind: "model" as const,
+            label: model.name,
+          })),
+        ...listBuiltInFunctionDefinitions()
+          .filter((definition) => definition.name.startsWith(modelPrefix))
+          .map((definition) => ({
+            kind: "function" as const,
+            label: definition.name,
+          })),
+      ],
     };
   }
 

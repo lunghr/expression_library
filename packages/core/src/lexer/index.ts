@@ -10,6 +10,7 @@ export type TokenKind =
   | "Star"
   | "Slash"
   | "Dot"
+  | "Comma"
   | "OpenParen"
   | "CloseParen"
   | "EqualEqual"
@@ -201,6 +202,8 @@ function readSingleCharacterTokenKind(character: string): TokenKind | null {
       return "Slash";
     case ".":
       return "Dot";
+    case ",":
+      return "Comma";
     case "(":
       return "OpenParen";
     case ")":

@@ -1,4 +1,4 @@
-export type SuggestionKind = "model" | "field" | "operator";
+export type SuggestionKind = "model" | "field" | "operator" | "function";
 
 export interface SuggestionItem {
   readonly kind: SuggestionKind;

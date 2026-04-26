@@ -1,4 +1,5 @@
-import type { AnyExpressionNode, BinaryOperator } from "../contracts/index.js";
+import type { AnyExpressionNode } from "../contracts/index.js";
+import { getBinaryOperatorDefinitionBySymbol } from "../operator-registry/index.js";
 
 export function serializeExpression(node: AnyExpressionNode): string {
   return serializeNode(node, 0, "root");
@@ -21,7 +22,20 @@ function serializeNode(
     return `${serializeReference(node.object)}.${node.member.name}`;
   }
 
-  const precedence = getOperatorPrecedence(node.operator);
+  if (node.kind === "FunctionCall") {
+    const argumentsList = node.arguments
+      .map((argument) => serializeNode(argument, 0, "root"))
+      .join(", ");
+    return `${node.functionName.name}(${argumentsList})`;
+  }
+
+  const definition = getBinaryOperatorDefinitionBySymbol(node.operator);
+
+  if (definition === null) {
+    throw new Error(`Unsupported binary operator "${node.operator}".`);
+  }
+
+  const precedence = definition.precedence;
   const left = serializeNode(node.left, precedence, "left");
   const right = serializeNode(node.right, precedence, "right");
   const serialized = `${left} ${node.operator} ${right}`;
@@ -47,27 +61,4 @@ function serializeReference(node: AnyExpressionNode): string {
   }
 
   return `(${serializeNode(node, 0, "root")})`;
-}
-
-function getOperatorPrecedence(operator: BinaryOperator): number {
-  switch (operator) {
-    case "||":
-      return 1;
-    case "&&":
-      return 2;
-    case "==":
-    case "!=":
-      return 3;
-    case "<":
-    case "<=":
-    case ">":
-    case ">=":
-      return 4;
-    case "+":
-    case "-":
-      return 5;
-    case "*":
-    case "/":
-      return 6;
-  }
 }

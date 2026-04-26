@@ -102,4 +102,38 @@ describe("semantic binding", () => {
     expect(bound.root?.kind).toBe("BoundBinaryExpression");
     expect(bound.root?.type).toBe("boolean");
   });
+
+  it("binds a known built-in function call", () => {
+    const parsed = parseExpression("sum(User.age)");
+    const bound = bindExpression(parsed.root, createTestCatalog());
+
+    expect(parsed.diagnostics).toHaveLength(0);
+    expect(bound.diagnostics).toHaveLength(0);
+    expect(bound.root?.kind).toBe("BoundFunctionCall");
+    expect(bound.root?.type).toBe("number");
+  });
+
+  it("reports an unknown built-in function", () => {
+    const parsed = parseExpression("median(User.age)");
+    const bound = bindExpression(parsed.root, createTestCatalog());
+
+    expect(parsed.diagnostics).toHaveLength(0);
+    expect(bound.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM005"]);
+  });
+
+  it("reports an invalid built-in function argument count", () => {
+    const parsed = parseExpression("sum()");
+    const bound = bindExpression(parsed.root, createTestCatalog());
+
+    expect(parsed.diagnostics).toHaveLength(0);
+    expect(bound.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM006"]);
+  });
+
+  it("reports an invalid built-in function argument type", () => {
+    const parsed = parseExpression("avg(User.active)");
+    const bound = bindExpression(parsed.root, createTestCatalog());
+
+    expect(parsed.diagnostics).toHaveLength(0);
+    expect(bound.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM007"]);
+  });
 });

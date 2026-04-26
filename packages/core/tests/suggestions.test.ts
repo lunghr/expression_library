@@ -49,6 +49,14 @@ describe("suggestions", () => {
     ]);
   });
 
+  it("suggests built-in functions for an identifier prefix", () => {
+    const result = getSuggestions("su", 2, createTestCatalog());
+
+    expect(result.items).toEqual([
+      { kind: "function", label: "sum" },
+    ]);
+  });
+
   it("suggests top-level fields after model member access", () => {
     const result = getSuggestions("User.", 5, createTestCatalog());
 

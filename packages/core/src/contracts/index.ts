@@ -18,6 +18,7 @@ export interface ExpressionNode {
     | "NumberLiteral"
     | "Identifier"
     | "MemberExpression"
+    | "FunctionCall"
     | "BinaryExpression";
   readonly span: SourceSpan;
 }
@@ -55,6 +56,12 @@ export interface MemberExpressionNode extends ExpressionNode {
 
 export type ReferenceExpressionNode = IdentifierNode | MemberExpressionNode;
 
+export interface FunctionCallNode extends ExpressionNode {
+  readonly kind: "FunctionCall";
+  readonly functionName: IdentifierNode;
+  readonly arguments: readonly AnyExpressionNode[];
+}
+
 export interface BinaryExpressionNode extends ExpressionNode {
   readonly kind: "BinaryExpression";
   readonly operator: BinaryOperator;
@@ -67,6 +74,7 @@ export type AnyExpressionNode =
   | NumberLiteralNode
   | IdentifierNode
   | MemberExpressionNode
+  | FunctionCallNode
   | BinaryExpressionNode;
 
 export interface ParseResult {

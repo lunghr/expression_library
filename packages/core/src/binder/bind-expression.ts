@@ -2,18 +2,21 @@ import type {
   AnyExpressionNode,
   BinaryExpressionNode,
   Diagnostic,
+  FunctionCallNode,
   IdentifierNode,
   MemberExpressionNode,
   NumberLiteralNode,
 } from "../contracts/index.js";
 import { createDiagnostic } from "../diagnostics/index.js";
 import type { ModelCatalog } from "../model-catalog/index.js";
+import { getBuiltInFunctionDefinition } from "../operator-registry/index.js";
 
 import type {
   AnyBoundExpressionNode,
   BindingResult,
   BoundBinaryExpressionNode,
   BoundIdentifierNode,
+  BoundFunctionCallNode,
   BoundMemberExpressionNode,
   BoundNumberLiteralNode,
   BoundReferenceNode,
@@ -53,6 +56,8 @@ function bindNode(
       return bindIdentifier(node, catalog, diagnostics);
     case "MemberExpression":
       return bindMemberExpression(node, catalog, diagnostics);
+    case "FunctionCall":
+      return bindFunctionCall(node, catalog, diagnostics);
     case "BinaryExpression":
       return bindBinaryExpression(node, catalog, diagnostics);
   }
@@ -192,6 +197,76 @@ function bindBinaryExpression(
   };
 }
 
+function bindFunctionCall(
+  node: FunctionCallNode,
+  catalog: ModelCatalog,
+  diagnostics: Diagnostic[],
+): BoundFunctionCallNode {
+  const definition = getBuiltInFunctionDefinition(node.functionName.name);
+  const argumentsList = node.arguments.map((argument) => bindNode(argument, catalog, diagnostics));
+
+  if (definition === null) {
+    diagnostics.push(
+      createDiagnostic(
+        "SEM005",
+        `Unknown function "${node.functionName.name}".`,
+        node.functionName.span,
+      ),
+    );
+
+    return {
+      kind: "BoundFunctionCall",
+      source: node,
+      span: node.span,
+      functionName: node.functionName.name,
+      definition: null,
+      arguments: argumentsList,
+      type: "unknown",
+    };
+  }
+
+  if (
+    node.arguments.length < definition.minArgumentCount
+    || node.arguments.length > definition.maxArgumentCount
+  ) {
+    diagnostics.push(
+      createDiagnostic(
+        "SEM006",
+        `Function "${definition.name}" expects ${formatArgumentCount(definition.minArgumentCount, definition.maxArgumentCount)}.`,
+        node.functionName.span,
+      ),
+    );
+  }
+
+  for (const [index, argument] of argumentsList.entries()) {
+    const expectedType = definition.argumentTypes[Math.min(index, definition.argumentTypes.length - 1)];
+
+    if (expectedType === undefined || expectedType === "any" || argument.type === "unknown") {
+      continue;
+    }
+
+    if (argument.type !== expectedType) {
+      diagnostics.push(
+        createDiagnostic(
+          "SEM007",
+          `Function "${definition.name}" expects argument ${index + 1} to be ${expectedType}, but got ${argument.type}.`,
+          argument.span,
+        ),
+      );
+    }
+  }
+
+  return {
+    kind: "BoundFunctionCall",
+    source: node,
+    span: node.span,
+    functionName: definition.name,
+    definition,
+    arguments: argumentsList,
+    type: definition.returnType,
+  };
+}
+
 function bindReferenceNode(
   node: IdentifierNode | MemberExpressionNode,
   catalog: ModelCatalog,
@@ -234,4 +309,12 @@ function getMetadataFieldType(field: { readonly kind: string; readonly valueType
     default:
       return "unknown";
   }
+}
+
+function formatArgumentCount(min: number, max: number): string {
+  if (min === max) {
+    return `${min} argument${min === 1 ? "" : "s"}`;
+  }
+
+  return `${min}-${max} arguments`;
 }
