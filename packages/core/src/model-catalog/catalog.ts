@@ -59,3 +59,9 @@ export function createModelCatalog(
     },
   };
 }
+
+export function refreshModelCatalog(
+  metadata: LoadedMetadataDocument,
+): ModelCatalog {
+  return createModelCatalog(metadata);
+}

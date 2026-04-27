@@ -4,16 +4,26 @@ export type ProjectScalarSchemaType =
   | "integer"
   | "boolean";
 
+export type ProjectSchemaDialect = "https://json-schema.org/draft/2020-12/schema";
+
 export interface ProjectScalarSchemaNode {
   readonly type: ProjectScalarSchemaType;
+}
+
+export interface ProjectReferenceSchemaNode {
+  readonly $ref: string;
 }
 
 export interface ProjectObjectSchemaNode {
   readonly type: "object";
   readonly properties: Readonly<Record<string, ProjectSchemaNode>>;
+  readonly $defs?: Readonly<Record<string, ProjectSchemaNode>>;
 }
 
-export type ProjectSchemaNode = ProjectScalarSchemaNode | ProjectObjectSchemaNode;
+export type ProjectSchemaNode =
+  | ProjectScalarSchemaNode
+  | ProjectObjectSchemaNode
+  | ProjectReferenceSchemaNode;
 
 export interface ProjectModelSchema {
   readonly name: string;
@@ -21,6 +31,7 @@ export interface ProjectModelSchema {
 }
 
 export interface ProjectMetadataDocument {
+  readonly $schema?: ProjectSchemaDialect;
   readonly models: readonly ProjectModelSchema[];
 }
 
