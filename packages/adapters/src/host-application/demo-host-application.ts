@@ -4,6 +4,7 @@ import { createDemoExpressionTransport } from "../expression-transport/index.js"
 import {
   createDemoMetadataProvider,
   loadModelCatalogFromProvider,
+  reloadModelCatalogFromProvider,
 } from "../metadata-provider/index.js";
 import type { ExpressionTransportRequest } from "../expression-transport/index.js";
 import type {
@@ -40,17 +41,19 @@ export function createHostApplicationAdapter(
 ): HostApplicationAdapter {
   return {
     async initialize(): Promise<HostApplicationServices> {
-      const catalog = await loadModelCatalogFromProvider(
+      let currentCatalog = await loadModelCatalogFromProvider(
         dependencies.metadataProvider,
       );
 
       return {
-        catalog,
+        get catalog() {
+          return currentCatalog;
+        },
         processExpression(source: string) {
-          return processExpressionResult(source, catalog);
+          return processExpressionResult(source, currentCatalog);
         },
         async submitExpression(source: string) {
-          const processed = processExpressionResult(source, catalog);
+          const processed = processExpressionResult(source, currentCatalog);
 
           if (processed.status !== "success" || processed.expression === null) {
             return createNotSentResult(processed);
@@ -88,6 +91,13 @@ export function createHostApplicationAdapter(
               },
             };
           }
+        },
+        async refreshMetadata() {
+          currentCatalog = await reloadModelCatalogFromProvider(
+            dependencies.metadataProvider,
+          );
+
+          return currentCatalog;
         },
       };
     },

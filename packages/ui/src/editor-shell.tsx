@@ -26,6 +26,9 @@ export interface EditorShellProps {
   readonly value?: string;
   readonly onValueChange?: (value: string) => void;
   readonly onSubmitExpression?: (value: string) => Promise<SubmissionResultView>;
+  readonly onRefreshMetadata?: () => Promise<void>;
+  readonly isRefreshingMetadata?: boolean;
+  readonly metadataVersion?: number;
 }
 
 export function EditorShell({
@@ -34,6 +37,9 @@ export function EditorShell({
   value,
   onValueChange,
   onSubmitExpression,
+  onRefreshMetadata,
+  isRefreshingMetadata = false,
+  metadataVersion = 0,
 }: EditorShellProps) {
   const editorState = useEditorState({
     catalog,
@@ -41,6 +47,7 @@ export function EditorShell({
     value,
     onValueChange,
     onSubmitExpression,
+    metadataVersion,
   });
   const snapshot = editorState.snapshot;
 
@@ -66,6 +73,16 @@ export function EditorShell({
             type="button"
           >
             {snapshot.isSubmitting ? "Sending..." : "Send Expression"}
+          </button>
+        )}
+        {onRefreshMetadata === undefined ? null : (
+          <button
+            onClick={() => {
+              void onRefreshMetadata();
+            }}
+            type="button"
+          >
+            {isRefreshingMetadata ? "Reloading..." : "Reload Metadata"}
           </button>
         )}
       </div>

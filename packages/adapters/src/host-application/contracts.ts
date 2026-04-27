@@ -41,6 +41,7 @@ export interface HostApplicationServices {
   readonly catalog: ModelCatalog;
   processExpression(source: string): ProcessedExpressionResult;
   submitExpression(source: string): Promise<SubmitExpressionResult>;
+  refreshMetadata(): Promise<ModelCatalog>;
 }
 
 export interface HostApplicationAdapter {

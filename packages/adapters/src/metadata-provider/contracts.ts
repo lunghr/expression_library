@@ -14,3 +14,9 @@ export async function loadModelCatalogFromProvider(
   const source = await provider.loadMetadataSource();
   return createModelCatalog(loadMetadataDocument(source));
 }
+
+export async function reloadModelCatalogFromProvider(
+  provider: MetadataProviderAdapter,
+): Promise<ModelCatalog> {
+  return loadModelCatalogFromProvider(provider);
+}

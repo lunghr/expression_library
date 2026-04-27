@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createDemoHostApplication,
+  createDemoMetadataProvider,
   createHostApplicationAdapter,
   type ExpressionTransportRequest,
   type MetadataProviderAdapter,
@@ -177,5 +178,58 @@ describe("host application adapter", () => {
 
     expect(submitted.transport.request.expression).toBe("User.age + 1");
     expect(submitted.transport.message).toBe("Network unavailable.");
+  });
+
+  it("refreshes metadata and reprocesses expressions against the updated catalog", async () => {
+    const metadataProvider = createDemoMetadataProvider();
+    const hostApplication = createHostApplicationAdapter({
+      metadataProvider,
+      expressionTransport: {
+        sendExpression(request) {
+          return {
+            expression: request.expression,
+            executionResult: {
+              status: "success",
+              value: request.expression,
+            },
+          };
+        },
+      },
+    });
+
+    const services = await hostApplication.initialize();
+
+    expect(services.catalog.getFieldByPath("User", ["address", "city"])?.name).toBe("city");
+
+    const beforeRefresh = services.processExpression("User.address.city");
+    expect(beforeRefresh.status).toBe("success");
+
+    metadataProvider.replaceMetadataSource({
+      models: [
+        {
+          name: "User",
+          schema: {
+            type: "object",
+            properties: {
+              score: { type: "number" },
+            },
+          },
+        },
+      ],
+    });
+
+    const refreshedCatalog = await services.refreshMetadata();
+
+    expect(refreshedCatalog.getFieldByPath("User", ["address", "city"])).toBeNull();
+    expect(refreshedCatalog.getField("User", "score")?.name).toBe("score");
+    expect(services.catalog.getField("User", "score")?.name).toBe("score");
+
+    const afterRefresh = services.processExpression("User.address.city");
+    expect(afterRefresh.status).toBe("semantic_error");
+    expect(afterRefresh.diagnostics.some((diagnostic) => diagnostic.code === "SEM002")).toBe(true);
+
+    const newFieldResult = services.processExpression("User.score + 1");
+    expect(newFieldResult.status).toBe("success");
+    expect(newFieldResult.expression).toBe("User.score + 1");
   });
 });

@@ -32,6 +32,7 @@ export interface UseEditorStateOptions {
   readonly value?: string;
   readonly onValueChange?: (value: string) => void;
   readonly onSubmitExpression?: (value: string) => Promise<SubmissionResultView>;
+  readonly metadataVersion?: number;
 }
 
 export function useEditorState({
@@ -40,6 +41,7 @@ export function useEditorState({
   value,
   onValueChange,
   onSubmitExpression,
+  metadataVersion,
 }: UseEditorStateOptions): EditorStateController {
   const [text, setTextState] = useState(value ?? initialText);
   const [cursor, setCursorState] = useState((value ?? initialText).length);
@@ -63,6 +65,10 @@ export function useEditorState({
     () => getSuggestions(text, cursor, catalog),
     [catalog, cursor, text],
   );
+
+  useEffect(() => {
+    setSubmission(null);
+  }, [metadataVersion]);
 
   function setText(nextText: string): void {
     if (value === undefined) {

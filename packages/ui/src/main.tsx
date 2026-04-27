@@ -36,6 +36,7 @@ interface DemoHostSubmitResult {
 interface DemoHostServices {
   readonly catalog: ModelCatalog;
   submitExpression(source: string): Promise<DemoHostSubmitResult>;
+  refreshMetadata(): Promise<ModelCatalog>;
 }
 
 function mapSubmissionResult(
@@ -65,7 +66,10 @@ function mapSubmissionResult(
 
 function DemoApplication() {
   const [services, setServices] = useState<DemoHostServices | null>(null);
+  const [catalog, setCatalog] = useState<ModelCatalog | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [metadataVersion, setMetadataVersion] = useState(0);
+  const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false);
 
   useEffect(() => {
     let cancelled = false;
@@ -76,7 +80,9 @@ function DemoApplication() {
         const nextServices = await hostApplication.initialize();
 
         if (!cancelled) {
-          setServices(nextServices as DemoHostServices);
+          const typedServices = nextServices as unknown as DemoHostServices;
+          setServices(typedServices);
+          setCatalog(typedServices.catalog);
         }
       } catch (cause) {
         if (!cancelled) {
@@ -99,13 +105,26 @@ function DemoApplication() {
     return <div>Initialization error: {error}</div>;
   }
 
-  if (services === null) {
+  if (services === null || catalog === null) {
     return <div>Initializing demo host application...</div>;
   }
 
   return (
     <EditorShell
-      catalog={services.catalog}
+      catalog={catalog}
+      isRefreshingMetadata={isRefreshingMetadata}
+      metadataVersion={metadataVersion}
+      onRefreshMetadata={async () => {
+        setIsRefreshingMetadata(true);
+
+        try {
+          const nextCatalog = await services.refreshMetadata();
+          setCatalog(nextCatalog);
+          setMetadataVersion((currentVersion) => currentVersion + 1);
+        } finally {
+          setIsRefreshingMetadata(false);
+        }
+      }}
       onSubmitExpression={async (source) => {
         const submission = await services.submitExpression(source);
         return mapSubmissionResult(submission);
