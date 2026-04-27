@@ -56,15 +56,15 @@ export interface BoundFunctionCallNode extends BoundExpressionNode {
   readonly source: FunctionCallNode;
   readonly functionName: string;
   readonly definition: BuiltInFunctionDefinition | null;
-  readonly arguments: readonly BoundExpressionNode[];
+  readonly arguments: readonly AnyBoundExpressionNode[];
 }
 
 export interface BoundBinaryExpressionNode extends BoundExpressionNode {
   readonly kind: "BoundBinaryExpression";
   readonly source: BinaryExpressionNode;
   readonly operator: BinaryOperator;
-  readonly left: BoundExpressionNode;
-  readonly right: BoundExpressionNode;
+  readonly left: AnyBoundExpressionNode;
+  readonly right: AnyBoundExpressionNode;
 }
 
 export type BoundReferenceNode =

@@ -4,6 +4,7 @@ import type { CSSProperties } from "react";
 import { DiagnosticsPanel } from "./diagnostics-panel.js";
 import { useEditorState } from "./editor-state.js";
 import { ResultPanel } from "./result-panel.js";
+import type { SubmissionResultView } from "./submission-result.js";
 import { SuggestionPanel } from "./suggestion-panel.js";
 import { TextModeRenderer } from "./text-mode-renderer.js";
 
@@ -24,6 +25,7 @@ export interface EditorShellProps {
   readonly initialValue?: string;
   readonly value?: string;
   readonly onValueChange?: (value: string) => void;
+  readonly onSubmitExpression?: (value: string) => Promise<SubmissionResultView>;
 }
 
 export function EditorShell({
@@ -31,12 +33,14 @@ export function EditorShell({
   initialValue = "User.age > 18 && User.active",
   value,
   onValueChange,
+  onSubmitExpression,
 }: EditorShellProps) {
   const editorState = useEditorState({
     catalog,
     initialText: initialValue,
     value,
     onValueChange,
+    onSubmitExpression,
   });
   const snapshot = editorState.snapshot;
 
@@ -54,9 +58,19 @@ export function EditorShell({
             editorState.setCursor(nextCursor);
           }}
         />
+        {onSubmitExpression === undefined ? null : (
+          <button
+            onClick={() => {
+              void editorState.submitExpression();
+            }}
+            type="button"
+          >
+            {snapshot.isSubmitting ? "Sending..." : "Send Expression"}
+          </button>
+        )}
       </div>
       <SuggestionPanel suggestions={snapshot.suggestions} />
-      <ResultPanel result={snapshot.result} />
+      <ResultPanel result={snapshot.result} submission={snapshot.submission} />
       <DiagnosticsPanel diagnostics={snapshot.result.diagnostics} />
     </div>
   );

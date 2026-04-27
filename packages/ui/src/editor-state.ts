@@ -7,11 +7,15 @@ import {
 } from "@expression-editor/core";
 import { useEffect, useMemo, useState } from "react";
 
+import type { SubmissionResultView } from "./submission-result.js";
+
 export interface EditorStateSnapshot {
   readonly text: string;
   readonly cursor: number;
   readonly result: ProcessedExpressionResult;
   readonly suggestions: SuggestionResult;
+  readonly submission: SubmissionResultView | null;
+  readonly isSubmitting: boolean;
 }
 
 export interface EditorStateController {
@@ -19,6 +23,7 @@ export interface EditorStateController {
   setText(nextText: string): void;
   setCursor(nextCursor: number): void;
   updateText(nextText: string, nextCursor?: number): void;
+  submitExpression(): Promise<void>;
 }
 
 export interface UseEditorStateOptions {
@@ -26,6 +31,7 @@ export interface UseEditorStateOptions {
   readonly initialText?: string;
   readonly value?: string;
   readonly onValueChange?: (value: string) => void;
+  readonly onSubmitExpression?: (value: string) => Promise<SubmissionResultView>;
 }
 
 export function useEditorState({
@@ -33,9 +39,12 @@ export function useEditorState({
   initialText = "User.age > 18 && User.active",
   value,
   onValueChange,
+  onSubmitExpression,
 }: UseEditorStateOptions): EditorStateController {
   const [text, setTextState] = useState(value ?? initialText);
   const [cursor, setCursorState] = useState((value ?? initialText).length);
+  const [submission, setSubmission] = useState<SubmissionResultView | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (value === undefined) {
@@ -76,15 +85,33 @@ export function useEditorState({
     onValueChange?.(nextText);
   }
 
+  async function submitExpression(): Promise<void> {
+    if (onSubmitExpression === undefined) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const nextSubmission = await onSubmitExpression(text);
+      setSubmission(nextSubmission);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
   return {
     snapshot: {
       text,
       cursor,
       result,
       suggestions,
+      submission,
+      isSubmitting,
     },
     setText,
     setCursor,
     updateText,
+    submitExpression,
   };
 }

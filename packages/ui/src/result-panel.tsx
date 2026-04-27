@@ -1,6 +1,11 @@
 import type { ProcessedExpressionResult } from "@expression-editor/core";
 import type { CSSProperties } from "react";
 
+import type {
+  ExecutionResultView,
+  SubmissionResultView,
+} from "./submission-result.js";
+
 const panelStyle = {
   border: "1px solid #d0d0d0",
   padding: "12px",
@@ -8,9 +13,10 @@ const panelStyle = {
 
 export interface ResultPanelProps {
   readonly result: ProcessedExpressionResult;
+  readonly submission?: SubmissionResultView | null;
 }
 
-export function ResultPanel({result}: ResultPanelProps) {
+export function ResultPanel({result, submission = null}: ResultPanelProps) {
   return (
     <>
       <div data-testid="processing-state" style={panelStyle}>
@@ -21,6 +27,11 @@ export function ResultPanel({result}: ResultPanelProps) {
       <div data-testid="canonical-output" style={panelStyle}>
         <div>Canonical Output</div>
         <div>{result.expression ?? "(none)"}</div>
+      </div>
+
+      <div style={panelStyle}>
+        <div>Execution Result</div>
+        <div>{getSubmissionLabel(submission)}</div>
       </div>
     </>
   );
@@ -37,4 +48,31 @@ function getStateLabel(status: string): string {
     default:
       return status;
   }
+}
+
+function getSubmissionLabel(
+  submission: SubmissionResultView | null,
+): string {
+  if (submission === null) {
+    return "Not submitted.";
+  }
+
+  switch (submission.status) {
+    case "not_sent":
+      return `Not sent: ${submission.reason}`;
+    case "transport_error":
+      return `Transport error: ${submission.message}`;
+    case "sent":
+      return getExecutionLabel(submission.executionResult);
+  }
+}
+
+function getExecutionLabel(
+  executionResult: ExecutionResultView,
+): string {
+  if ("value" in executionResult) {
+    return `Success: ${JSON.stringify(executionResult.value)}`;
+  }
+
+  return `Execution error: ${executionResult.message}`;
 }

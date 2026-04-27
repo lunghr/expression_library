@@ -1,11 +1,70 @@
-import { createDemoHostApplication, type HostApplicationServices } from "@expression-editor/adapters";
+import { createDemoHostApplication } from "@expression-editor/adapters";
+import type { ModelCatalog } from "@expression-editor/core";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
 import { EditorShell } from "./editor-shell.js";
+import type { SubmissionResultView } from "./submission-result.js";
+
+interface DemoHostSubmitResult {
+  readonly transport:
+    | {
+      readonly status: "not_sent";
+      readonly reason: string;
+    }
+    | {
+      readonly status: "transport_error";
+      readonly message: string;
+    }
+    | {
+      readonly status: "sent";
+      readonly response: {
+        readonly expression: string | null;
+        readonly executionResult:
+          | {
+            readonly status: "success";
+            readonly value: unknown;
+          }
+          | {
+            readonly status: "error";
+            readonly message: string;
+          };
+      };
+    };
+}
+
+interface DemoHostServices {
+  readonly catalog: ModelCatalog;
+  submitExpression(source: string): Promise<DemoHostSubmitResult>;
+}
+
+function mapSubmissionResult(
+  submission: DemoHostSubmitResult,
+): SubmissionResultView {
+  switch (submission.transport.status) {
+    case "not_sent":
+      return {
+        status: "not_sent",
+        reason: submission.transport.reason,
+      };
+    case "transport_error":
+      return {
+        status: "transport_error",
+        message: submission.transport.message,
+      };
+    case "sent":
+      return {
+        status: "sent",
+        expression: submission.transport.response.expression,
+        executionResult: submission.transport.response.executionResult,
+      };
+    default:
+      return submission.transport;
+  }
+}
 
 function DemoApplication() {
-  const [services, setServices] = useState<HostApplicationServices | null>(null);
+  const [services, setServices] = useState<DemoHostServices | null>(null);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
@@ -17,7 +76,7 @@ function DemoApplication() {
         const nextServices = await hostApplication.initialize();
 
         if (!cancelled) {
-          setServices(nextServices);
+          setServices(nextServices as DemoHostServices);
         }
       } catch (cause) {
         if (!cancelled) {
@@ -44,7 +103,15 @@ function DemoApplication() {
     return <div>Initializing demo host application...</div>;
   }
 
-  return <EditorShell catalog={services.catalog}/>;
+  return (
+    <EditorShell
+      catalog={services.catalog}
+      onSubmitExpression={async (source) => {
+        const submission = await services.submitExpression(source);
+        return mapSubmissionResult(submission);
+      }}
+    />
+  );
 }
 
 const rootElement = document.getElementById("root");

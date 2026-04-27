@@ -1,28 +1,32 @@
-import type { ProcessedExpressionResult } from "@expression-editor/core";
-
-import type { ExpressionTransportAdapter, ExpressionTransportResponse, } from "./contracts.js";
+import type {
+  ExpressionTransportAdapter,
+  ExpressionTransportRequest,
+  ExpressionTransportResponse,
+} from "./contracts.js";
 
 export interface DemoExpressionTransportAdapter
   extends ExpressionTransportAdapter {
-  readonly sentResults: readonly ProcessedExpressionResult[];
+  readonly sentRequests: readonly ExpressionTransportRequest[];
 }
 
 export function createDemoExpressionTransport(): DemoExpressionTransportAdapter {
-  const sentResults: ProcessedExpressionResult[] = [];
+  const sentRequests: ExpressionTransportRequest[] = [];
 
   return {
-    get sentResults() {
-      return sentResults;
+    get sentRequests() {
+      return sentRequests;
     },
     sendExpression(
-      result: ProcessedExpressionResult,
+      request: ExpressionTransportRequest,
     ): ExpressionTransportResponse {
-      sentResults.push(result);
+      sentRequests.push(request);
 
       return {
-        accepted: true,
-        expression: result.expression,
-        status: result.status,
+        expression: request.expression,
+        executionResult: {
+          status: "success",
+          value: request.expression,
+        },
       };
     },
   };
