@@ -45,7 +45,13 @@ describe("suggestions", () => {
     const result = getSuggestions("Us", 2, createTestCatalog());
 
     expect(result.items).toEqual([
-      { kind: "model", label: "User" },
+      {
+        kind: "model",
+        label: "User",
+        insertText: "User",
+        detail: "model",
+        replaceSpan: {start: 0, end: 2},
+      },
     ]);
   });
 
@@ -53,26 +59,59 @@ describe("suggestions", () => {
     const result = getSuggestions("su", 2, createTestCatalog());
 
     expect(result.items).toEqual([
-      { kind: "function", label: "sum" },
+      {
+        kind: "function",
+        label: "sum",
+        insertText: "sum(",
+        detail: "sum(...)",
+        replaceSpan: {start: 0, end: 2},
+      },
     ]);
   });
 
   it("suggests top-level fields after model member access", () => {
     const result = getSuggestions("User.", 5, createTestCatalog());
 
-    expect(result.items).toEqual([
-      { kind: "field", label: "age" },
-      { kind: "field", label: "active" },
-      { kind: "field", label: "address" },
-    ]);
+    expect(result.items.map((item) => item.label)).toEqual(["age", "active", "address"]);
+    expect(result.items[0]).toMatchObject({
+      kind: "field",
+      label: "age",
+      insertText: "age",
+      detail: "number",
+      replaceSpan: {start: 5, end: 5},
+    });
+  });
+
+  it("suggests fields for an incomplete member prefix", () => {
+    const result = getSuggestions("User.a", 6, createTestCatalog());
+
+    expect(result.items.map((item) => item.label)).toEqual(["age", "active", "address"]);
+    expect(result.items[0]?.replaceSpan).toEqual({start: 5, end: 6});
   });
 
   it("suggests nested fields after object member access", () => {
     const result = getSuggestions("User.address.", 13, createTestCatalog());
 
     expect(result.items).toEqual([
-      { kind: "field", label: "city" },
+      {
+        kind: "field",
+        label: "city",
+        insertText: "city",
+        detail: "string",
+        replaceSpan: {start: 13, end: 13},
+      },
     ]);
+  });
+
+  it("suggests simple function argument starts", () => {
+    const result = getSuggestions("sum(", 4, createTestCatalog());
+
+    expect(result.items.map((item) => item.label)).toEqual(["User", "Order"]);
+    expect(result.items[0]).toMatchObject({
+      kind: "model",
+      insertText: "User",
+      replaceSpan: {start: 4, end: 4},
+    });
   });
 
   it("suggests operators after a complete expression fragment", () => {
@@ -92,6 +131,11 @@ describe("suggestions", () => {
       "&&",
       "||",
     ]);
+    expect(result.items[0]).toMatchObject({
+      kind: "operator",
+      insertText: "+",
+      detail: "arithmetic",
+    });
   });
 
   it("returns no suggestions for unsupported member contexts", () => {

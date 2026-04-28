@@ -9,9 +9,19 @@ export function createSourceSpan(start: number, end: number): SourceSpan {
 
 export interface Diagnostic {
   readonly code: string;
+  readonly severity: DiagnosticSeverity;
+  readonly category: DiagnosticCategory;
   readonly message: string;
   readonly span: SourceSpan;
 }
+
+export type DiagnosticSeverity = "error" | "warning" | "info";
+
+export type DiagnosticCategory =
+  | "lexical"
+  | "syntax"
+  | "metadata"
+  | "semantic";
 
 export interface ExpressionNode {
   readonly kind:

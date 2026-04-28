@@ -1,4 +1,5 @@
 import type { ModelCatalog } from "../model-catalog/index.js";
+import { parseExpression } from "../parser/index.js";
 import {
   listBinaryOperatorDefinitions,
   listBuiltInFunctionDefinitions,
@@ -18,7 +19,28 @@ export function getSuggestions(
 
   if (memberContext) {
     return {
-      items: getFieldSuggestions(memberContext.modelName, memberContext.path, catalog),
+      items: getFieldSuggestions(
+        memberContext.modelName,
+        memberContext.path,
+        catalog,
+        memberContext.prefix,
+        memberContext.replaceStart,
+        safeCursor,
+      ),
+    };
+  }
+
+  const functionArgumentContext = readFunctionArgumentContext(beforeCursor);
+
+  if (functionArgumentContext) {
+    return {
+      items: getModelAndFunctionSuggestions(
+        functionArgumentContext.prefix,
+        functionArgumentContext.replaceStart,
+        safeCursor,
+        catalog,
+        {includeFunctions: false},
+      ),
     };
   }
 
@@ -26,28 +48,23 @@ export function getSuggestions(
 
   if (modelPrefix !== null) {
     return {
-      items: [
-        ...catalog.models
-          .filter((model) => model.name.startsWith(modelPrefix))
-          .map((model) => ({
-            kind: "model" as const,
-            label: model.name,
-          })),
-        ...listBuiltInFunctionDefinitions()
-          .filter((definition) => definition.name.startsWith(modelPrefix))
-          .map((definition) => ({
-            kind: "function" as const,
-            label: definition.name,
-          })),
-      ],
+      items: getModelAndFunctionSuggestions(
+        modelPrefix.prefix,
+        modelPrefix.replaceStart,
+        safeCursor,
+        catalog,
+        {includeFunctions: true},
+      ),
     };
   }
 
   if (shouldSuggestOperators(beforeCursor)) {
     return {
       items: listBinaryOperatorDefinitions().map((operator) => ({
-        kind: "operator",
+        kind: "operator" as const,
         label: operator.symbol,
+        insertText: operator.symbol,
+        detail: operator.category,
       })),
     };
   }
@@ -61,14 +78,22 @@ function getFieldSuggestions(
   modelName: string,
   path: readonly string[],
   catalog: ModelCatalog,
+  prefix: string,
+  replaceStart: number,
+  cursor: number,
 ): SuggestionItem[] {
   if (path.length === 0) {
     const model = catalog.getModel(modelName);
     return model === null
       ? []
-      : model.fields.map((field) => ({
+      : model.fields
+        .filter((field) => field.name.startsWith(prefix))
+        .map((field) => ({
         kind: "field",
         label: field.name,
+        insertText: field.name,
+        detail: field.valueType,
+        replaceSpan: {start: replaceStart, end: cursor},
       }));
   }
 
@@ -78,22 +103,28 @@ function getFieldSuggestions(
     return [];
   }
 
-  return field.fields.map((childField) => ({
+  return field.fields
+    .filter((childField) => childField.name.startsWith(prefix))
+    .map((childField) => ({
     kind: "field",
     label: childField.name,
+    insertText: childField.name,
+    detail: childField.valueType,
+    replaceSpan: {start: replaceStart, end: cursor},
   }));
 }
 
 function readMemberContext(
   beforeCursor: string,
-): { modelName: string; path: readonly string[] } | null {
-  const match = beforeCursor.match(/([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\.\s*$/);
+): { modelName: string; path: readonly string[]; prefix: string; replaceStart: number } | null {
+  const match = beforeCursor.match(/([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*)\.([A-Za-z_][A-Za-z0-9_]*)?$/);
 
   if (!match) {
     return null;
   }
 
   const segments = match[1]?.split(".") ?? [];
+  const prefix = match[2] ?? "";
 
   if (segments.length === 0) {
     return null;
@@ -102,12 +133,16 @@ function readMemberContext(
   return {
     modelName: segments[0],
     path: segments.slice(1),
+    prefix,
+    replaceStart: beforeCursor.length - prefix.length,
   };
 }
 
-function readIdentifierPrefix(beforeCursor: string): string | null {
+function readIdentifierPrefix(
+  beforeCursor: string,
+): { prefix: string; replaceStart: number } | null {
   if (beforeCursor.trim().length === 0) {
-    return "";
+    return {prefix: "", replaceStart: beforeCursor.length};
   }
 
   const operatorMatch = beforeCursor.match(/(?:^|[+\-*/<>=!&|(\s])([A-Za-z_][A-Za-z0-9_]*)$/);
@@ -116,9 +151,76 @@ function readIdentifierPrefix(beforeCursor: string): string | null {
     return null;
   }
 
-  return operatorMatch[1] ?? "";
+  const prefix = operatorMatch[1] ?? "";
+  return {
+    prefix,
+    replaceStart: beforeCursor.length - prefix.length,
+  };
+}
+
+function readFunctionArgumentContext(
+  beforeCursor: string,
+): { prefix: string; replaceStart: number } | null {
+  const match = beforeCursor.match(/\b[A-Za-z_][A-Za-z0-9_]*\(\s*([A-Za-z_][A-Za-z0-9_]*)?$/);
+
+  if (!match) {
+    return null;
+  }
+
+  const prefix = match[1] ?? "";
+  return {
+    prefix,
+    replaceStart: beforeCursor.length - prefix.length,
+  };
 }
 
 function shouldSuggestOperators(beforeCursor: string): boolean {
-  return /([A-Za-z_][A-Za-z0-9_]*(?:\.[A-Za-z_][A-Za-z0-9_]*)*|\d+|\))\s*$/.test(beforeCursor);
+  const trimmed = beforeCursor.trimEnd();
+
+  if (trimmed.length === 0) {
+    return false;
+  }
+
+  const parsed = parseExpression(trimmed);
+
+  if (parsed.root === null || parsed.diagnostics.some((diagnostic) => diagnostic.category === "syntax")) {
+    return false;
+  }
+
+  return true;
+}
+
+function getModelAndFunctionSuggestions(
+  prefix: string,
+  replaceStart: number,
+  cursor: number,
+  catalog: ModelCatalog,
+  options: { readonly includeFunctions: boolean },
+): SuggestionItem[] {
+  const modelSuggestions = catalog.models
+    .filter((model) => model.name.startsWith(prefix))
+    .map((model) => ({
+      kind: "model" as const,
+      label: model.name,
+      insertText: model.name,
+      detail: "model",
+      replaceSpan: {start: replaceStart, end: cursor},
+    }));
+
+  if (!options.includeFunctions) {
+    return modelSuggestions;
+  }
+
+  return [
+    ...modelSuggestions,
+    ...listBuiltInFunctionDefinitions()
+      .filter((definition) => definition.name.startsWith(prefix))
+      .map((definition) => ({
+        kind: "function" as const,
+        label: definition.name,
+        insertText: `${definition.name}(`,
+        detail: `${definition.name}(...)`,
+        replaceSpan: {start: replaceStart, end: cursor},
+      })),
+  ];
 }
