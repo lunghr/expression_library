@@ -46,6 +46,19 @@ describe("preview evaluation", () => {
     });
   });
 
+  it("evaluates string, boolean, and unary expressions as known", () => {
+    const result = processExpressionResult(
+      '!false == true && "A" != "B"',
+      createTestCatalog(),
+      {},
+    );
+
+    expect(result.preview).toEqual({
+      status: "known",
+      value: true,
+    });
+  });
+
   it("evaluates supported operators to a known boolean result", () => {
     const result = processExpressionResult(
       "User.age > 18 && User.active",

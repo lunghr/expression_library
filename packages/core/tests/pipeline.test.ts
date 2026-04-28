@@ -122,6 +122,20 @@ describe("core expression pipeline", () => {
     ]);
   });
 
+  it("tokenizes string, boolean, and unary syntax", () => {
+    const result = tokenize('!"active" == true');
+
+    expect(result.tokens.map((token) => token.kind)).toEqual([
+      "Bang",
+      "String",
+      "Whitespace",
+      "EqualEqual",
+      "Whitespace",
+      "Identifier",
+      "End",
+    ]);
+  });
+
   it("reports invalid characters as invalid tokens and diagnostics", () => {
     const result = tokenize("1 + $");
 
@@ -165,6 +179,27 @@ describe("core expression pipeline", () => {
     expect(result.root?.kind === "FunctionCall" ? result.root.functionName.name : undefined).toBe("sum");
     expect(result.root?.kind === "FunctionCall" ? result.root.arguments[0]?.kind : undefined).toBe("MemberExpression");
     expect(result.root ? serializeExpression(result.root) : undefined).toBe("sum(User.age)");
+  });
+
+  it("parses and serializes string and boolean literals", () => {
+    const stringResult = parseExpression('"Moscow"');
+    const booleanResult = parseExpression("true");
+
+    expect(stringResult.diagnostics).toHaveLength(0);
+    expect(stringResult.root?.kind).toBe("StringLiteral");
+    expect(stringResult.root ? serializeExpression(stringResult.root) : undefined).toBe('"Moscow"');
+
+    expect(booleanResult.diagnostics).toHaveLength(0);
+    expect(booleanResult.root?.kind).toBe("BooleanLiteral");
+    expect(booleanResult.root ? serializeExpression(booleanResult.root) : undefined).toBe("true");
+  });
+
+  it("parses and serializes unary expressions", () => {
+    const result = parseExpression("-(1 + 2) * !false");
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.root?.kind).toBe("BinaryExpression");
+    expect(result.root ? serializeExpression(result.root) : undefined).toBe("-(1 + 2) * !false");
   });
 
   it("preserves function calls inside binary expressions", () => {

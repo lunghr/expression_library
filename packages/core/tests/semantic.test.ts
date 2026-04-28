@@ -103,6 +103,51 @@ describe("semantic binding", () => {
     expect(bound.root?.type).toBe("boolean");
   });
 
+  it("binds string and boolean literals", () => {
+    const stringParsed = parseExpression('"Moscow"');
+    const booleanParsed = parseExpression("false");
+    const catalog = createTestCatalog();
+    const stringBound = bindExpression(stringParsed.root, catalog);
+    const booleanBound = bindExpression(booleanParsed.root, catalog);
+
+    expect(stringBound.root?.kind).toBe("BoundStringLiteral");
+    expect(stringBound.root?.type).toBe("string");
+    expect(booleanBound.root?.kind).toBe("BoundBooleanLiteral");
+    expect(booleanBound.root?.type).toBe("boolean");
+  });
+
+  it("binds operator definitions on binary expressions", () => {
+    const parsed = parseExpression("User.age + 1");
+    const bound = bindExpression(parsed.root, createTestCatalog());
+
+    expect(bound.diagnostics).toHaveLength(0);
+    expect(bound.root?.kind).toBe("BoundBinaryExpression");
+    expect(bound.root?.kind === "BoundBinaryExpression" ? bound.root.operatorDefinition.category : undefined).toBe("arithmetic");
+  });
+
+  it("binds unary operators and reports invalid unary operands", () => {
+    const validParsed = parseExpression("!User.active");
+    const invalidParsed = parseExpression("-User.active");
+    const catalog = createTestCatalog();
+    const validBound = bindExpression(validParsed.root, catalog);
+    const invalidBound = bindExpression(invalidParsed.root, catalog);
+
+    expect(validBound.diagnostics).toHaveLength(0);
+    expect(validBound.root?.kind).toBe("BoundUnaryExpression");
+    expect(validBound.root?.type).toBe("boolean");
+    expect(validBound.root?.kind === "BoundUnaryExpression" ? validBound.root.operatorDefinition.category : undefined).toBe("logical");
+    expect(invalidBound.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM008"]);
+  });
+
+  it("allows equality for matching primitive types", () => {
+    const parsed = parseExpression('"Moscow" == User.address.city');
+    const bound = bindExpression(parsed.root, createTestCatalog());
+
+    expect(parsed.diagnostics).toHaveLength(0);
+    expect(bound.diagnostics).toHaveLength(0);
+    expect(bound.root?.type).toBe("boolean");
+  });
+
   it("binds a known built-in function call", () => {
     const parsed = parseExpression("sum(User.age)");
     const bound = bindExpression(parsed.root, createTestCatalog());
@@ -111,6 +156,7 @@ describe("semantic binding", () => {
     expect(bound.diagnostics).toHaveLength(0);
     expect(bound.root?.kind).toBe("BoundFunctionCall");
     expect(bound.root?.type).toBe("number");
+    expect(bound.root?.kind === "BoundFunctionCall" ? bound.root.definition?.name : undefined).toBe("sum");
   });
 
   it("reports an unknown built-in function", () => {
@@ -135,5 +181,14 @@ describe("semantic binding", () => {
 
     expect(parsed.diagnostics).toHaveLength(0);
     expect(bound.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM007"]);
+  });
+
+  it("keeps count simple and accepts one argument of any type", () => {
+    const parsed = parseExpression("count(User.active)");
+    const bound = bindExpression(parsed.root, createTestCatalog());
+
+    expect(parsed.diagnostics).toHaveLength(0);
+    expect(bound.diagnostics).toHaveLength(0);
+    expect(bound.root?.type).toBe("number");
   });
 });

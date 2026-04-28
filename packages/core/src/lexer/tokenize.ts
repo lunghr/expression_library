@@ -44,6 +44,40 @@ export function tokenize(source: string): TokenizeResult {
       continue;
     }
 
+    if (character === '"') {
+      const start = index;
+      index += 1;
+
+      while (index < source.length && source[index] !== '"') {
+        index += source[index] === "\\" && index + 1 < source.length ? 2 : 1;
+      }
+
+      if (index >= source.length) {
+        const span = createSourceSpan(start, source.length);
+        tokens.push({
+          kind: "String",
+          lexeme: source.slice(start),
+          span,
+        });
+        diagnostics.push(
+          createDiagnostic(
+            "LEX002",
+            "Unterminated string literal.",
+            span,
+          ),
+        );
+        continue;
+      }
+
+      index += 1;
+      tokens.push({
+        kind: "String",
+        lexeme: source.slice(start, index),
+        span: createSourceSpan(start, index),
+      });
+      continue;
+    }
+
     if (isIdentifierStart(character)) {
       const start = index;
       index += 1;
@@ -174,6 +208,8 @@ function readSingleCharacterTokenKind(character: string): TokenKind | null {
       return "OpenParen";
     case ")":
       return "CloseParen";
+    case "!":
+      return "Bang";
     case "<":
       return "Less";
     case ">":

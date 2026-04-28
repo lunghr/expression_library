@@ -2,15 +2,23 @@ import type {
   AnyExpressionNode,
   BinaryExpressionNode,
   BinaryOperator,
+  BooleanLiteralNode,
   FunctionCallNode,
   IdentifierNode,
   MemberExpressionNode,
   NumberLiteralNode,
   SourceSpan,
+  StringLiteralNode,
+  UnaryExpressionNode,
+  UnaryOperator,
 } from "../contracts/index.js";
 import type { Diagnostic } from "../diagnostics/index.js";
 import type { MetadataField, MetadataModel } from "../metadata/index.js";
-import type { BuiltInFunctionDefinition } from "../operator-registry/index.js";
+import type {
+  BuiltInFunctionDefinition,
+  OperatorDefinition,
+  UnaryOperatorDefinition,
+} from "../operator-registry/index.js";
 
 export type ExpressionValueType =
   | "number"
@@ -22,9 +30,12 @@ export type ExpressionValueType =
 export interface BoundExpressionNode {
   readonly kind:
     | "BoundNumberLiteral"
+    | "BoundStringLiteral"
+    | "BoundBooleanLiteral"
     | "BoundIdentifier"
     | "BoundMemberExpression"
     | "BoundFunctionCall"
+    | "BoundUnaryExpression"
     | "BoundBinaryExpression";
   readonly span: SourceSpan;
   readonly type: ExpressionValueType;
@@ -51,6 +62,18 @@ export interface BoundMemberExpressionNode extends BoundExpressionNode {
   readonly field: MetadataField | null;
 }
 
+export interface BoundStringLiteralNode extends BoundExpressionNode {
+  readonly kind: "BoundStringLiteral";
+  readonly source: StringLiteralNode;
+  readonly value: string;
+}
+
+export interface BoundBooleanLiteralNode extends BoundExpressionNode {
+  readonly kind: "BoundBooleanLiteral";
+  readonly source: BooleanLiteralNode;
+  readonly value: boolean;
+}
+
 export interface BoundFunctionCallNode extends BoundExpressionNode {
   readonly kind: "BoundFunctionCall";
   readonly source: FunctionCallNode;
@@ -63,8 +86,17 @@ export interface BoundBinaryExpressionNode extends BoundExpressionNode {
   readonly kind: "BoundBinaryExpression";
   readonly source: BinaryExpressionNode;
   readonly operator: BinaryOperator;
+  readonly operatorDefinition: OperatorDefinition;
   readonly left: AnyBoundExpressionNode;
   readonly right: AnyBoundExpressionNode;
+}
+
+export interface BoundUnaryExpressionNode extends BoundExpressionNode {
+  readonly kind: "BoundUnaryExpression";
+  readonly source: UnaryExpressionNode;
+  readonly operator: UnaryOperator;
+  readonly operatorDefinition: UnaryOperatorDefinition;
+  readonly operand: AnyBoundExpressionNode;
 }
 
 export type BoundReferenceNode =
@@ -73,9 +105,12 @@ export type BoundReferenceNode =
 
 export type AnyBoundExpressionNode =
   | BoundNumberLiteralNode
+  | BoundStringLiteralNode
+  | BoundBooleanLiteralNode
   | BoundIdentifierNode
   | BoundMemberExpressionNode
   | BoundFunctionCallNode
+  | BoundUnaryExpressionNode
   | BoundBinaryExpressionNode;
 
 export interface BindingResult {

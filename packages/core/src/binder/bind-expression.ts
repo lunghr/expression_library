@@ -1,28 +1,38 @@
 import type {
   AnyExpressionNode,
   BinaryExpressionNode,
+  BooleanLiteralNode,
   Diagnostic,
   FunctionCallNode,
   IdentifierNode,
   MemberExpressionNode,
   NumberLiteralNode,
+  StringLiteralNode,
+  UnaryExpressionNode,
 } from "../contracts/index.js";
 import { createDiagnostic } from "../diagnostics/index.js";
 import type { ModelCatalog } from "../model-catalog/index.js";
-import { getBuiltInFunctionDefinition } from "../operator-registry/index.js";
+import {
+  getBinaryOperatorDefinitionBySymbol,
+  getBuiltInFunctionDefinition,
+  getUnaryOperatorDefinitionBySymbol,
+} from "../operator-registry/index.js";
 
 import type {
   AnyBoundExpressionNode,
   BindingResult,
   BoundBinaryExpressionNode,
+  BoundBooleanLiteralNode,
   BoundIdentifierNode,
   BoundFunctionCallNode,
   BoundMemberExpressionNode,
   BoundNumberLiteralNode,
   BoundReferenceNode,
+  BoundStringLiteralNode,
+  BoundUnaryExpressionNode,
   ExpressionValueType,
 } from "./contracts.js";
-import { getBinaryOperatorTypeRule } from "./type-rules.js";
+import { getBinaryOperatorTypeRule, getUnaryOperatorTypeRule } from "./type-rules.js";
 
 export function bindExpression(
   root: AnyExpressionNode | null,
@@ -52,12 +62,18 @@ function bindNode(
   switch (node.kind) {
     case "NumberLiteral":
       return bindNumberLiteral(node);
+    case "StringLiteral":
+      return bindStringLiteral(node);
+    case "BooleanLiteral":
+      return bindBooleanLiteral(node);
     case "Identifier":
       return bindIdentifier(node, catalog, diagnostics);
     case "MemberExpression":
       return bindMemberExpression(node, catalog, diagnostics);
     case "FunctionCall":
       return bindFunctionCall(node, catalog, diagnostics);
+    case "UnaryExpression":
+      return bindUnaryExpression(node, catalog, diagnostics);
     case "BinaryExpression":
       return bindBinaryExpression(node, catalog, diagnostics);
   }
@@ -174,7 +190,13 @@ function bindBinaryExpression(
 ): BoundBinaryExpressionNode {
   const left = bindNode(node.left, catalog, diagnostics);
   const right = bindNode(node.right, catalog, diagnostics);
-  const rule = getBinaryOperatorTypeRule(node.operator, left.type, right.type);
+  const operatorDefinition = getBinaryOperatorDefinitionBySymbol(node.operator);
+
+  if (operatorDefinition === null) {
+    throw new Error(`Unsupported binary operator "${node.operator}".`);
+  }
+
+  const rule = getBinaryOperatorTypeRule(operatorDefinition, left.type, right.type);
 
   if (!rule.isCompatible) {
     diagnostics.push(
@@ -191,9 +213,69 @@ function bindBinaryExpression(
     source: node,
     span: node.span,
     operator: node.operator,
+    operatorDefinition,
     left,
     right,
     type: rule.resultType,
+  };
+}
+
+function bindUnaryExpression(
+  node: UnaryExpressionNode,
+  catalog: ModelCatalog,
+  diagnostics: Diagnostic[],
+): BoundUnaryExpressionNode {
+  const operand = bindNode(node.operand, catalog, diagnostics);
+  const operatorDefinition = getUnaryOperatorDefinitionBySymbol(node.operator);
+
+  if (operatorDefinition === null) {
+    throw new Error(`Unsupported unary operator "${node.operator}".`);
+  }
+
+  const rule = getUnaryOperatorTypeRule(operatorDefinition, operand.type);
+
+  if (!rule.isCompatible) {
+    diagnostics.push(
+      createDiagnostic(
+        "SEM008",
+        `Operator "${node.operator}" is not compatible with operand type ${operand.type}.`,
+        node.operatorSpan,
+      ),
+    );
+  }
+
+  return {
+    kind: "BoundUnaryExpression",
+    source: node,
+    span: node.span,
+    operator: node.operator,
+    operatorDefinition,
+    operand,
+    type: rule.resultType,
+  };
+}
+
+function bindStringLiteral(
+  node: StringLiteralNode,
+): BoundStringLiteralNode {
+  return {
+    kind: "BoundStringLiteral",
+    source: node,
+    span: node.span,
+    type: "string",
+    value: node.value,
+  };
+}
+
+function bindBooleanLiteral(
+  node: BooleanLiteralNode,
+): BoundBooleanLiteralNode {
+  return {
+    kind: "BoundBooleanLiteral",
+    source: node,
+    span: node.span,
+    type: "boolean",
+    value: node.value,
   };
 }
 

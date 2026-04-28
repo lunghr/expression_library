@@ -1,5 +1,7 @@
-import type { BinaryOperator } from "../contracts/index.js";
-import { getBinaryOperatorDefinitionBySymbol } from "../operator-registry/index.js";
+import type {
+  OperatorDefinition,
+  UnaryOperatorDefinition,
+} from "../operator-registry/index.js";
 
 import type { ExpressionValueType } from "./contracts.js";
 
@@ -9,7 +11,7 @@ export interface BinaryOperatorTypeRuleResult {
 }
 
 export function getBinaryOperatorTypeRule(
-  operator: BinaryOperator,
+  definition: OperatorDefinition,
   leftType: ExpressionValueType,
   rightType: ExpressionValueType,
 ): BinaryOperatorTypeRuleResult {
@@ -18,12 +20,6 @@ export function getBinaryOperatorTypeRule(
       resultType: "unknown",
       isCompatible: true,
     };
-  }
-
-  const definition = getBinaryOperatorDefinitionBySymbol(operator);
-
-  if (definition === null) {
-    throw new Error(`Unsupported binary operator "${operator}".`);
   }
 
   switch (definition.category) {
@@ -46,6 +42,34 @@ export function getBinaryOperatorTypeRule(
       return leftType === rightType && isPrimitiveComparableType(leftType)
         ? {resultType: "boolean", isCompatible: true}
         : {resultType: "unknown", isCompatible: false};
+  }
+}
+
+export function getUnaryOperatorTypeRule(
+  definition: UnaryOperatorDefinition,
+  operandType: ExpressionValueType,
+): BinaryOperatorTypeRuleResult {
+  if (operandType === "unknown") {
+    return {
+      resultType: "unknown",
+      isCompatible: true,
+    };
+  }
+
+  switch (definition.category) {
+    case "arithmetic":
+      return operandType === "number"
+        ? {resultType: "number", isCompatible: true}
+        : {resultType: "unknown", isCompatible: false};
+
+    case "logical":
+      return operandType === "boolean"
+        ? {resultType: "boolean", isCompatible: true}
+        : {resultType: "unknown", isCompatible: false};
+
+    case "comparison":
+    case "equality":
+      return {resultType: "unknown", isCompatible: false};
   }
 }
 

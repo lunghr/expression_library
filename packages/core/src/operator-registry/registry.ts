@@ -1,4 +1,4 @@
-import type { BinaryOperator } from "../contracts/index.js";
+import type { BinaryOperator, UnaryOperator } from "../contracts/index.js";
 import type { TokenKind } from "../lexer/index.js";
 
 import type {
@@ -6,6 +6,7 @@ import type {
   BuiltInFunctionName,
   OperatorDefinition,
   OperatorRegistry,
+  UnaryOperatorDefinition,
 } from "./contracts.js";
 
 const binaryOperators = [
@@ -103,6 +104,31 @@ const operatorBySymbol = new Map<BinaryOperator, OperatorDefinition>(
   binaryOperators.map((operator) => [operator.symbol, operator]),
 );
 
+const unaryOperators = [
+  {
+    symbol: "-",
+    tokenKind: "Minus",
+    precedence: 70,
+    associativity: "right",
+    category: "arithmetic",
+  },
+  {
+    symbol: "!",
+    tokenKind: "Bang",
+    precedence: 70,
+    associativity: "right",
+    category: "logical",
+  },
+] as const satisfies readonly UnaryOperatorDefinition[];
+
+const unaryOperatorByTokenKind = new Map<TokenKind, UnaryOperatorDefinition>(
+  unaryOperators.map((operator) => [operator.tokenKind, operator]),
+);
+
+const unaryOperatorBySymbol = new Map<UnaryOperator, UnaryOperatorDefinition>(
+  unaryOperators.map((operator) => [operator.symbol, operator]),
+);
+
 const builtInFunctions = [
   {
     name: "sum",
@@ -133,6 +159,8 @@ const functionByName = new Map<BuiltInFunctionName, BuiltInFunctionDefinition>(
 
 export const operatorRegistry: OperatorRegistry = {
   operators: binaryOperators,
+  unaryOperators,
+  functions: builtInFunctions,
 };
 
 export function getBinaryOperatorDefinitionByTokenKind(
@@ -151,8 +179,28 @@ export function isBinaryOperatorTokenKind(tokenKind: TokenKind): boolean {
   return operatorByTokenKind.has(tokenKind);
 }
 
+export function getUnaryOperatorDefinitionByTokenKind(
+  tokenKind: TokenKind,
+): UnaryOperatorDefinition | null {
+  return unaryOperatorByTokenKind.get(tokenKind) ?? null;
+}
+
+export function getUnaryOperatorDefinitionBySymbol(
+  symbol: UnaryOperator,
+): UnaryOperatorDefinition | null {
+  return unaryOperatorBySymbol.get(symbol) ?? null;
+}
+
+export function isUnaryOperatorTokenKind(tokenKind: TokenKind): boolean {
+  return unaryOperatorByTokenKind.has(tokenKind);
+}
+
 export function listBinaryOperatorDefinitions(): readonly OperatorDefinition[] {
   return operatorRegistry.operators;
+}
+
+export function listUnaryOperatorDefinitions(): readonly UnaryOperatorDefinition[] {
+  return operatorRegistry.unaryOperators;
 }
 
 export function getBuiltInFunctionDefinition(
@@ -162,5 +210,5 @@ export function getBuiltInFunctionDefinition(
 }
 
 export function listBuiltInFunctionDefinitions(): readonly BuiltInFunctionDefinition[] {
-  return builtInFunctions;
+  return operatorRegistry.functions;
 }

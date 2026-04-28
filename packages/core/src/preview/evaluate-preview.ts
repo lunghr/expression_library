@@ -1,10 +1,13 @@
 import type {
   AnyBoundExpressionNode,
   BoundBinaryExpressionNode,
+  BoundBooleanLiteralNode,
   BoundFunctionCallNode,
   BoundIdentifierNode,
   BoundMemberExpressionNode,
   BoundNumberLiteralNode,
+  BoundStringLiteralNode,
+  BoundUnaryExpressionNode,
 } from "../binder/index.js";
 import type { PreviewContext, PreviewResult, PreviewValue } from "./contracts.js";
 
@@ -29,15 +32,35 @@ function evaluateNode(
   switch (node.kind) {
     case "BoundNumberLiteral":
       return evaluateNumberLiteral(node);
+    case "BoundStringLiteral":
+      return evaluateStringLiteral(node);
+    case "BoundBooleanLiteral":
+      return evaluateBooleanLiteral(node);
     case "BoundIdentifier":
       return evaluateIdentifier(node, context);
     case "BoundMemberExpression":
       return evaluateMemberExpression(node, context);
     case "BoundFunctionCall":
       return evaluateFunctionCall(node, context);
+    case "BoundUnaryExpression":
+      return evaluateUnaryExpression(node, context);
     case "BoundBinaryExpression":
       return evaluateBinaryExpression(node, context);
   }
+}
+
+function evaluateStringLiteral(node: BoundStringLiteralNode): PreviewResult {
+  return {
+    status: "known",
+    value: node.value,
+  };
+}
+
+function evaluateBooleanLiteral(node: BoundBooleanLiteralNode): PreviewResult {
+  return {
+    status: "known",
+    value: node.value,
+  };
 }
 
 function evaluateNumberLiteral(node: BoundNumberLiteralNode): PreviewResult {
@@ -172,6 +195,43 @@ function evaluateFunctionCall(
       return {status: "unknown"};
     }
   }
+}
+
+function evaluateUnaryExpression(
+  node: BoundUnaryExpressionNode,
+  context: PreviewContext,
+): PreviewResult {
+  const operandResult = evaluateNode(node.operand, context);
+
+  if (operandResult.status !== "known") {
+    return operandResult;
+  }
+
+  if (node.operator === "-") {
+    if (typeof operandResult.value !== "number") {
+      return {
+        status: "error",
+        message: 'Operator "-" requires a numeric preview value.',
+      };
+    }
+
+    return {
+      status: "known",
+      value: -operandResult.value,
+    };
+  }
+
+  if (typeof operandResult.value !== "boolean") {
+    return {
+      status: "error",
+      message: 'Operator "!" requires a boolean preview value.',
+    };
+  }
+
+  return {
+    status: "known",
+    value: !operandResult.value,
+  };
 }
 
 function evaluateBinaryExpression(

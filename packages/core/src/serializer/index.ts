@@ -1,5 +1,8 @@
 import type { AnyExpressionNode } from "../contracts/index.js";
-import { getBinaryOperatorDefinitionBySymbol } from "../operator-registry/index.js";
+import {
+  getBinaryOperatorDefinitionBySymbol,
+  getUnaryOperatorDefinitionBySymbol,
+} from "../operator-registry/index.js";
 
 export function serializeExpression(node: AnyExpressionNode): string {
   return serializeNode(node, 0, "root");
@@ -12,6 +15,14 @@ function serializeNode(
 ): string {
   if (node.kind === "NumberLiteral") {
     return node.raw;
+  }
+
+  if (node.kind === "StringLiteral") {
+    return `"${escapeStringValue(node.value)}"`;
+  }
+
+  if (node.kind === "BooleanLiteral") {
+    return node.value ? "true" : "false";
   }
 
   if (node.kind === "Identifier") {
@@ -27,6 +38,17 @@ function serializeNode(
       .map((argument) => serializeNode(argument, 0, "root"))
       .join(", ");
     return `${node.functionName.name}(${argumentsList})`;
+  }
+
+  if (node.kind === "UnaryExpression") {
+    const definition = getUnaryOperatorDefinitionBySymbol(node.operator);
+
+    if (definition === null) {
+      throw new Error(`Unsupported unary operator "${node.operator}".`);
+    }
+
+    const operand = serializeNode(node.operand, definition.precedence, "right");
+    return `${node.operator}${operand}`;
   }
 
   const definition = getBinaryOperatorDefinitionBySymbol(node.operator);
@@ -49,6 +71,12 @@ function serializeNode(
   }
 
   return serialized;
+}
+
+function escapeStringValue(value: string): string {
+  return value
+    .replaceAll("\\", "\\\\")
+    .replaceAll('"', '\\"');
 }
 
 function serializeReference(node: AnyExpressionNode): string {

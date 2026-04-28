@@ -7,14 +7,18 @@ import type {
 } from "../contracts/index.js";
 import {
   createBinaryExpression,
+  createBooleanLiteral,
   createFunctionCall,
   createIdentifier,
   createMemberExpression,
   createNumberLiteral,
+  createStringLiteral,
+  createUnaryExpression,
 } from "../ast/index.js";
 import { createDiagnostic } from "../diagnostics/index.js";
 import {
   getBinaryOperatorDefinitionByTokenKind,
+  getUnaryOperatorDefinitionByTokenKind,
   isBinaryOperatorTokenKind,
   type OperatorDefinition,
 } from "../operator-registry/index.js";
@@ -59,7 +63,7 @@ class Parser {
   }
 
   public parseBinaryExpression(minPrecedence: number): AnyExpressionNode | null {
-    let left = this.parsePostfix();
+    let left = this.parseUnary();
 
     while (left !== null) {
       const operatorToken = this.current();
@@ -102,6 +106,35 @@ class Parser {
     return left;
   }
 
+  private parseUnary(): AnyExpressionNode | null {
+    const operatorToken = this.current();
+    const operator = getUnaryOperatorDefinitionByTokenKind(operatorToken.kind);
+
+    if (operator === null) {
+      return this.parsePostfix();
+    }
+
+    this.consume();
+    const operand = this.parseUnary();
+
+    if (operand === null) {
+      this.diagnostics.push(
+        createDiagnostic(
+          this.current().kind === "End"
+            ? "PAR004"
+            : "PAR001",
+          this.current().kind === "End"
+            ? `Trailing operator "${operatorToken.lexeme}".`
+            : `Expected expression after "${operatorToken.lexeme}".`,
+          operatorToken.span,
+        ),
+      );
+      return null;
+    }
+
+    return createUnaryExpression(operator.symbol, operatorToken.span, operand);
+  }
+
   private parsePostfix(): AnyExpressionNode | null {
     let expression = this.parsePrimary();
 
@@ -125,8 +158,22 @@ class Parser {
       return createNumberLiteral(token.lexeme, Number(token.lexeme), token.span);
     }
 
+    if (token.kind === "String") {
+      this.consume();
+      return createStringLiteral(
+        token.lexeme,
+        readStringValue(token.lexeme),
+        token.span,
+      );
+    }
+
     if (token.kind === "Identifier") {
       this.consume();
+
+      if (token.lexeme === "true" || token.lexeme === "false") {
+        return createBooleanLiteral(token.lexeme === "true", token.span);
+      }
+
       const functionName = createIdentifier(token.lexeme, token.span);
 
       if (this.current().kind === "OpenParen") {
@@ -296,4 +343,15 @@ class Parser {
   private isReferenceNode(node: AnyExpressionNode): node is ReferenceExpressionNode {
     return node.kind === "Identifier" || node.kind === "MemberExpression";
   }
+}
+
+function readStringValue(raw: string): string {
+  if (raw.length < 2 || !raw.endsWith('"')) {
+    return raw.slice(1);
+  }
+
+  return raw
+    .slice(1, -1)
+    .replaceAll('\\"', '"')
+    .replaceAll("\\\\", "\\");
 }

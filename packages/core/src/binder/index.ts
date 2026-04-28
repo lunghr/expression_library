@@ -2,12 +2,15 @@ export type {
   AnyBoundExpressionNode,
   BindingResult,
   BoundBinaryExpressionNode,
+  BoundBooleanLiteralNode,
   BoundExpressionNode,
   BoundFunctionCallNode,
   BoundIdentifierNode,
   BoundMemberExpressionNode,
   BoundNumberLiteralNode,
   BoundReferenceNode,
+  BoundStringLiteralNode,
+  BoundUnaryExpressionNode,
   ExpressionValueType,
 } from "./contracts.js";
 

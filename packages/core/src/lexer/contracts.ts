@@ -2,6 +2,7 @@ import type { Diagnostic, SourceSpan } from "../contracts/index.js";
 
 export type TokenKind =
   | "Number"
+  | "String"
   | "Identifier"
   | "Plus"
   | "Minus"
@@ -11,6 +12,7 @@ export type TokenKind =
   | "Comma"
   | "OpenParen"
   | "CloseParen"
+  | "Bang"
   | "EqualEqual"
   | "BangEqual"
   | "Less"
