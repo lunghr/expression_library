@@ -1,3 +1,4 @@
+export * from "./public-api.js";
 export * from "./contracts/index.js";
 export * from "./core/index.js";
 export * from "./metadata/index.js";
