@@ -1,6 +1,7 @@
 import type { Diagnostic } from "../contracts/index.js";
 import type { ModelCatalog } from "../model-catalog/index.js";
 import type { PreviewContext, PreviewResult } from "../preview/index.js";
+import type { JsonExpressionNode } from "../serializer/index.js";
 
 import { processExpression } from "./process-expression.js";
 
@@ -14,6 +15,7 @@ export interface ProcessedExpressionResult {
   readonly status: ProcessedExpressionStatus;
   readonly diagnostics: readonly Diagnostic[];
   readonly expression: string | null;
+  readonly expressionJson: JsonExpressionNode | null;
   readonly preview: PreviewResult | null;
 }
 
@@ -29,6 +31,7 @@ export function processExpressionResult(
     status: getProcessedExpressionStatus(result.diagnostics),
     diagnostics: result.diagnostics,
     expression: result.serialized,
+    expressionJson: result.serializedJson,
     preview: result.preview,
   };
 }
