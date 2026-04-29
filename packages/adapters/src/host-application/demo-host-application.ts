@@ -16,11 +16,13 @@ import type {
 
 function createTransportRequest(
   source: string,
-  expression: string,
+  expressionJson: NonNullable<ReturnType<typeof processExpressionResult>["expressionJson"]>,
+  canonicalText: string | null,
 ): ExpressionTransportRequest {
   return {
     source,
-    expression,
+    expressionJson,
+    canonicalText,
   };
 }
 
@@ -55,12 +57,16 @@ export function createHostApplicationAdapter(
         async submitExpression(source: string) {
           const processed = processExpressionResult(source, currentCatalog);
 
-          if (processed.status !== "success" || processed.expression === null) {
+          if (
+            processed.status !== "success"
+            || processed.expressionJson === null
+          ) {
             return createNotSentResult(processed);
           }
 
           const request = createTransportRequest(
             processed.source,
+            processed.expressionJson,
             processed.expression,
           );
 

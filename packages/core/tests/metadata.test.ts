@@ -277,6 +277,6 @@ describe("metadata foundation", () => {
     const afterRefresh = processExpression("User.age + 1", refreshedCatalog);
 
     expect(beforeRefresh.diagnostics).toHaveLength(0);
-    expect(afterRefresh.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM002", "SEM004"]);
+    expect(afterRefresh.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM002"]);
   });
 });

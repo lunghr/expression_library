@@ -59,6 +59,6 @@ describe("public api", () => {
       },
     });
     expect(Array.isArray(result.diagnostics)).toBe(true);
-    expect(result.preview).toBeUndefined();
+    expect(result.preview).toBeNull();
   });
 });

@@ -31,38 +31,123 @@ function createTestCatalog() {
 }
 
 describe("serialization", () => {
-  it("serializes expressions to structural JSON AST", () => {
-    const parsed = parseExpression("sum(User.age) + -1");
-
-    expect(parsed.diagnostics).toHaveLength(0);
-    expect(parsed.root === null ? null : serializeExpressionToJsonAst(parsed.root)).toEqual({
-      type: "binary",
-      operator: "+",
-      span: {start: 0, end: 18},
-      left: {
-        type: "function_call",
-        functionName: "sum",
-        span: {start: 0, end: 13},
-        arguments: [
-          {
-            type: "member",
-            path: ["User", "age"],
-            span: {start: 4, end: 12},
-          },
-        ],
-      },
-      right: {
-        type: "unary",
-        operator: "-",
-        span: {start: 16, end: 18},
-        operand: {
+  it("serializes every supported MVP node type to JSON AST", () => {
+    const cases = [
+      {
+        source: "1",
+        expected: {
           type: "number",
           value: 1,
           raw: "1",
-          span: {start: 17, end: 18},
+          span: {start: 0, end: 1},
         },
       },
-    });
+      {
+        source: '"A"',
+        expected: {
+          type: "string",
+          value: "A",
+          span: {start: 0, end: 3},
+        },
+      },
+      {
+        source: "true",
+        expected: {
+          type: "boolean",
+          value: true,
+          span: {start: 0, end: 4},
+        },
+      },
+      {
+        source: "User",
+        expected: {
+          type: "identifier",
+          name: "User",
+          span: {start: 0, end: 4},
+        },
+      },
+      {
+        source: "User.age",
+        expected: {
+          type: "member",
+          path: ["User", "age"],
+          span: {start: 0, end: 8},
+        },
+      },
+      {
+        source: "sum(User.age)",
+        expected: {
+          type: "function_call",
+          functionName: "sum",
+          span: {start: 0, end: 13},
+          arguments: [
+            {
+              type: "member",
+              path: ["User", "age"],
+              span: {start: 4, end: 12},
+            },
+          ],
+        },
+      },
+      {
+        source: "-1",
+        expected: {
+          type: "unary",
+          operator: "-",
+          span: {start: 0, end: 2},
+          operand: {
+            type: "number",
+            value: 1,
+            raw: "1",
+            span: {start: 1, end: 2},
+          },
+        },
+      },
+      {
+        source: 'sum(User.age) + "A" == "A"',
+        expected: {
+          type: "binary",
+          operator: "==",
+          span: {start: 0, end: 26},
+          left: {
+            type: "binary",
+            operator: "+",
+            span: {start: 0, end: 19},
+            left: {
+              type: "function_call",
+              functionName: "sum",
+              span: {start: 0, end: 13},
+              arguments: [
+                {
+                  type: "member",
+                  path: ["User", "age"],
+                  span: {start: 4, end: 12},
+                },
+              ],
+            },
+            right: {
+              type: "string",
+              value: "A",
+              span: {start: 16, end: 19},
+            },
+          },
+          right: {
+            type: "string",
+            value: "A",
+            span: {start: 23, end: 26},
+          },
+        },
+      },
+    ] as const;
+
+    for (const testCase of cases) {
+      const parsed = parseExpression(testCase.source);
+
+      expect(parsed.diagnostics).toHaveLength(0);
+      expect(parsed.root === null ? null : serializeExpressionToJsonAst(parsed.root)).toEqual(
+        testCase.expected,
+      );
+    }
   });
 
   it("keeps canonical text serialization as a secondary format", () => {
@@ -109,6 +194,18 @@ describe("serialization", () => {
         type: "boolean",
         value: true,
       },
+    });
+  });
+
+  it("keeps SourceSpan as optional linkage data in the JSON AST contract", () => {
+    const parsed = parseExpression("User.age");
+    const serialized = parsed.root === null ? null : serializeExpressionToJsonAst(parsed.root);
+
+    expect(serialized).not.toBeNull();
+    expect(serialized).toMatchObject({
+      type: "member",
+      path: ["User", "age"],
+      span: {start: 0, end: 8},
     });
   });
 });

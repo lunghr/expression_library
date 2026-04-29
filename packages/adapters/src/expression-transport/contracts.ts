@@ -1,14 +1,18 @@
+import type { JsonExpressionNode } from "@expression-editor/core";
+
 export type ExecutionResultValue =
   | null
   | boolean
   | number
   | string
+  | JsonExpressionNode
   | readonly ExecutionResultValue[]
   | { readonly [key: string]: ExecutionResultValue };
 
 export interface ExpressionTransportRequest {
   readonly source: string;
-  readonly expression: string;
+  readonly expressionJson: JsonExpressionNode;
+  readonly canonicalText: string | null;
 }
 
 export interface SuccessfulExecutionResult {

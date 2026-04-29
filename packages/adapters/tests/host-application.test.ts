@@ -27,7 +27,11 @@ describe("host application adapter", () => {
       throw new Error("Expected sent transport result.");
     }
 
-    expect(submitted.transport.request.expression).toBe("User.age > 18");
+    expect(submitted.transport.request.canonicalText).toBe("User.age > 18");
+    expect(submitted.transport.request.expressionJson).toMatchObject({
+      type: "binary",
+      operator: ">",
+    });
     expect(submitted.transport.response.executionResult.status).toBe("success");
   });
 
@@ -57,7 +61,7 @@ describe("host application adapter", () => {
         sendExpression(request) {
           sentRequests.push(request);
           return {
-            expression: request.expression,
+            expression: request.canonicalText,
             executionResult: {
               status: "success",
               value: 125,
@@ -79,7 +83,11 @@ describe("host application adapter", () => {
 
     expect(submitted.transport.status).toBe("sent");
     expect(sentRequests).toHaveLength(1);
-    expect(sentRequests[0]?.expression).toBe("Order.total + 5");
+    expect(sentRequests[0]?.canonicalText).toBe("Order.total + 5");
+    expect(sentRequests[0]?.expressionJson).toMatchObject({
+      type: "binary",
+      operator: "+",
+    });
 
     if (submitted.transport.status !== "sent") {
       throw new Error("Expected sent transport result.");
@@ -176,7 +184,11 @@ describe("host application adapter", () => {
       throw new Error("Expected transport_error result.");
     }
 
-    expect(submitted.transport.request.expression).toBe("User.age + 1");
+    expect(submitted.transport.request.canonicalText).toBe("User.age + 1");
+    expect(submitted.transport.request.expressionJson).toMatchObject({
+      type: "binary",
+      operator: "+",
+    });
     expect(submitted.transport.message).toBe("Network unavailable.");
   });
 
@@ -187,10 +199,10 @@ describe("host application adapter", () => {
       expressionTransport: {
         sendExpression(request) {
           return {
-            expression: request.expression,
+            expression: request.canonicalText,
             executionResult: {
               status: "success",
-              value: request.expression,
+              value: request.expressionJson,
             },
           };
         },

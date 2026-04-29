@@ -12,7 +12,7 @@ export type JsonExpressionNode =
 
 export interface JsonExpressionBase {
   readonly type: string;
-  readonly span: SourceSpan;
+  readonly span?: SourceSpan;
 }
 
 export interface JsonNumberLiteralNode extends JsonExpressionBase {

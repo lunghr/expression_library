@@ -22,10 +22,10 @@ export function createDemoExpressionTransport(): DemoExpressionTransportAdapter 
       sentRequests.push(request);
 
       return {
-        expression: request.expression,
+        expression: request.canonicalText,
         executionResult: {
           status: "success",
-          value: request.expression,
+          value: request.expressionJson,
         },
       };
     },
