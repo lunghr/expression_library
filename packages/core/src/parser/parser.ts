@@ -153,6 +153,10 @@ class Parser {
   private parsePrimary(): AnyExpressionNode | null {
     const token = this.current();
 
+    if (token.kind === "End") {
+      return null;
+    }
+
     if (token.kind === "Number") {
       this.consume();
       return createNumberLiteral(token.lexeme, Number(token.lexeme), token.span);
@@ -266,11 +270,14 @@ class Parser {
     }
 
     if (expectArgument && this.current().kind !== "CloseParen") {
+      const span = this.reader.previous()?.kind === "Comma"
+        ? this.reader.previous()?.span ?? openParen.span
+        : openParen.span;
       this.diagnostics.push(
         createDiagnostic(
           "PAR001",
           `Expected expression inside "${functionName.name}(...)" call.`,
-          openParen.span,
+          span,
         ),
       );
     }

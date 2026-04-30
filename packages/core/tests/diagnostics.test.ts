@@ -44,8 +44,13 @@ describe("diagnostics payload", () => {
 
     expect(result.diagnostics.map((diagnostic) => diagnostic.category)).toEqual([
       "syntax",
-      "syntax",
     ]);
+    expect(result.diagnostics[0]).toMatchObject({
+      code: "PAR004",
+      severity: "error",
+      category: "syntax",
+      span: {start: 2, end: 3},
+    });
     expect(result.diagnostics.every((diagnostic) => diagnostic.severity === "error")).toBe(true);
   });
 

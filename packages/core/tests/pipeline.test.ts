@@ -256,7 +256,7 @@ describe("core expression pipeline", () => {
     const result = parseExpression("1 +");
 
     expect(result.root?.kind).toBe("NumberLiteral");
-    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR000", "PAR004"]);
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR004"]);
   });
 
   it("reports a missing closing parenthesis", () => {
