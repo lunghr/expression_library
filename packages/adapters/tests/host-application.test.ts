@@ -5,6 +5,8 @@ import {
   createDemoMetadataProvider,
   createHostApplicationAdapter,
   type ExpressionTransportRequest,
+  MetadataProviderLoadError,
+  MetadataProviderValidationError,
   type MetadataProviderAdapter,
 } from "../src/index.js";
 
@@ -243,5 +245,95 @@ describe("host application adapter", () => {
     const newFieldResult = services.processExpression("User.score + 1");
     expect(newFieldResult.status).toBe("success");
     expect(newFieldResult.expression).toBe("User.score + 1");
+  });
+
+  it("keeps the current catalog when refreshed metadata validation fails", async () => {
+    const metadataProvider = createDemoMetadataProvider();
+    const hostApplication = createHostApplicationAdapter({
+      metadataProvider,
+      expressionTransport: {
+        sendExpression(request) {
+          return {
+            expression: request.canonicalText,
+            executionResult: {
+              status: "success",
+              value: request.expressionJson,
+            },
+          };
+        },
+      },
+    });
+
+    const services = await hostApplication.initialize();
+    expect(services.catalog.getField("User", "age")?.name).toBe("age");
+
+    metadataProvider.replaceMetadataSource({
+      models: [
+        {
+          name: "User",
+          schema: {
+            type: "array",
+          },
+        },
+      ],
+    });
+
+    await expect(services.refreshMetadata()).rejects.toBeInstanceOf(
+      MetadataProviderValidationError,
+    );
+
+    expect(services.catalog.getField("User", "age")?.name).toBe("age");
+    expect(services.catalog.getField("User", "score")).toBeNull();
+  });
+
+  it("keeps the current catalog when the provider fails during refresh", async () => {
+    let shouldFail = false;
+    const metadataProvider: MetadataProviderAdapter = {
+      loadMetadataSource() {
+        if (shouldFail) {
+          throw new Error("Provider offline.");
+        }
+
+        return {
+          models: [
+            {
+              name: "User",
+              schema: {
+                type: "object",
+                properties: {
+                  age: { type: "number" },
+                },
+              },
+            },
+          ],
+        };
+      },
+    };
+
+    const hostApplication = createHostApplicationAdapter({
+      metadataProvider,
+      expressionTransport: {
+        sendExpression(request) {
+          return {
+            expression: request.canonicalText,
+            executionResult: {
+              status: "success",
+              value: request.expressionJson,
+            },
+          };
+        },
+      },
+    });
+
+    const services = await hostApplication.initialize();
+    expect(services.catalog.getField("User", "age")?.name).toBe("age");
+
+    shouldFail = true;
+
+    await expect(services.refreshMetadata()).rejects.toBeInstanceOf(
+      MetadataProviderLoadError,
+    );
+
+    expect(services.catalog.getField("User", "age")?.name).toBe("age");
   });
 });
