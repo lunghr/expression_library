@@ -106,11 +106,23 @@ describe("suggestions", () => {
   it("suggests simple function argument starts", () => {
     const result = getSuggestions("sum(", 4, createTestCatalog());
 
-    expect(result.items.map((item) => item.label)).toEqual(["User", "Order"]);
+    expect(result.items.map((item) => item.label)).toEqual(["User", "Order", "sum", "avg", "count"]);
     expect(result.items[0]).toMatchObject({
       kind: "model",
       insertText: "User",
       replaceSpan: {start: 4, end: 4},
+    });
+  });
+
+  it("suggests nested function starts inside function arguments", () => {
+    const result = getSuggestions("sum(av", 6, createTestCatalog());
+
+    expect(result.items).toContainEqual({
+      kind: "function",
+      label: "avg",
+      insertText: "avg(",
+      detail: "avg(...)",
+      replaceSpan: {start: 4, end: 6},
     });
   });
 
@@ -148,5 +160,33 @@ describe("suggestions", () => {
     const result = getSuggestions("$", 1, createTestCatalog());
 
     expect(result.items).toEqual([]);
+  });
+
+  it("suggests root names after an operator with cursor in the prefix", () => {
+    const result = getSuggestions("User.age + Or", 13, createTestCatalog());
+
+    expect(result.items).toEqual([
+      {
+        kind: "model",
+        label: "Order",
+        insertText: "Order",
+        detail: "model",
+        replaceSpan: {start: 11, end: 13},
+      },
+    ]);
+  });
+
+  it("suggests nested fields in incomplete grouped expressions", () => {
+    const result = getSuggestions("(User.address.", 14, createTestCatalog());
+
+    expect(result.items).toEqual([
+      {
+        kind: "field",
+        label: "city",
+        insertText: "city",
+        detail: "string",
+        replaceSpan: {start: 14, end: 14},
+      },
+    ]);
   });
 });
