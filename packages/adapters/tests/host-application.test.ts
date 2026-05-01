@@ -11,6 +11,65 @@ import {
 } from "../src/index.js";
 
 describe("host application adapter", () => {
+  it("fails initialize with a provider load error when metadata source cannot be loaded", async () => {
+    const hostApplication = createHostApplicationAdapter({
+      metadataProvider: {
+        loadMetadataSource() {
+          throw new Error("Provider offline.");
+        },
+      },
+      expressionTransport: {
+        sendExpression() {
+          return {
+            expression: null,
+            executionResult: {
+              status: "success",
+              value: null,
+            },
+          };
+        },
+      },
+    });
+
+    await expect(hostApplication.initialize()).rejects.toBeInstanceOf(
+      MetadataProviderLoadError,
+    );
+  });
+
+  it("fails initialize with a metadata validation error when source is invalid", async () => {
+    const hostApplication = createHostApplicationAdapter({
+      metadataProvider: {
+        loadMetadataSource() {
+          return {
+            models: [
+              {
+                name: "User",
+                schema: {
+                  type: "array",
+                },
+              },
+            ],
+          };
+        },
+      },
+      expressionTransport: {
+        sendExpression() {
+          return {
+            expression: null,
+            executionResult: {
+              status: "success",
+              value: null,
+            },
+          };
+        },
+      },
+    });
+
+    await expect(hostApplication.initialize()).rejects.toBeInstanceOf(
+      MetadataProviderValidationError,
+    );
+  });
+
   it("initializes core-facing services without exposing adapter internals", async () => {
     const hostApplication = createDemoHostApplication();
     const services = await hostApplication.initialize();
