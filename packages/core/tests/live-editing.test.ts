@@ -55,6 +55,22 @@ describe("live editing parser behavior", () => {
     });
   });
 
+  it("reports empty open grouping with consistent recovery diagnostics", () => {
+    const result = parseExpression("(");
+
+    expect(result.root).toBeNull();
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
+      "PAR001",
+      "PAR002",
+    ]);
+    expect(result.diagnostics[0]).toMatchObject({
+      category: "syntax",
+      severity: "error",
+      span: {start: 0, end: 1},
+    });
+    expect(result.diagnostics[1]?.span).toEqual({start: 0, end: 1});
+  });
+
   it("keeps function calls with trailing comma usable", () => {
     const result = parseExpression("sum(User.age,");
 

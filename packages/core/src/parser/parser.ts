@@ -226,6 +226,17 @@ class Parser {
           openParen.span,
         ),
       );
+
+      if (this.current().kind !== "CloseParen") {
+        this.diagnostics.push(
+          createDiagnostic(
+            "PAR002",
+            'Expected closing ")" after expression.',
+            this.reader.createSpanFrom(openParen),
+          ),
+        );
+      }
+
       return null;
     }
 

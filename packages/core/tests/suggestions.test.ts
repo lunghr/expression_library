@@ -126,6 +126,20 @@ describe("suggestions", () => {
     });
   });
 
+  it("suggests root names after a comma inside a function argument list", () => {
+    const result = getSuggestions("sum(User.age, Or", 16, createTestCatalog());
+
+    expect(result.items).toEqual([
+      {
+        kind: "model",
+        label: "Order",
+        insertText: "Order",
+        detail: "model",
+        replaceSpan: {start: 14, end: 16},
+      },
+    ]);
+  });
+
   it("suggests operators after a complete expression fragment", () => {
     const result = getSuggestions("User.age ", 9, createTestCatalog());
 
@@ -188,5 +202,11 @@ describe("suggestions", () => {
         replaceSpan: {start: 14, end: 14},
       },
     ]);
+  });
+
+  it("returns no operator suggestions for incomplete grouped expressions", () => {
+    const result = getSuggestions("(User.age ", 10, createTestCatalog());
+
+    expect(result.items).toEqual([]);
   });
 });
