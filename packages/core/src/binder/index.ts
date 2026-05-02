@@ -4,7 +4,6 @@ export type {
   BoundBinaryExpressionNode,
   BoundBooleanLiteralNode,
   BoundExpressionNode,
-  BoundFunctionCallNode,
   BoundIdentifierNode,
   BoundMemberExpressionNode,
   BoundNumberLiteralNode,

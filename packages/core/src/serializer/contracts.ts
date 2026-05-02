@@ -6,7 +6,6 @@ export type JsonExpressionNode =
   | JsonBooleanLiteralNode
   | JsonIdentifierNode
   | JsonMemberNode
-  | JsonFunctionCallNode
   | JsonUnaryExpressionNode
   | JsonBinaryExpressionNode;
 
@@ -39,12 +38,6 @@ export interface JsonIdentifierNode extends JsonExpressionBase {
 export interface JsonMemberNode extends JsonExpressionBase {
   readonly type: "member";
   readonly path: readonly string[];
-}
-
-export interface JsonFunctionCallNode extends JsonExpressionBase {
-  readonly type: "function_call";
-  readonly functionName: string;
-  readonly arguments: readonly JsonExpressionNode[];
 }
 
 export interface JsonUnaryExpressionNode extends JsonExpressionBase {

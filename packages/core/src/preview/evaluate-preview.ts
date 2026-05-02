@@ -2,7 +2,6 @@ import type {
   AnyBoundExpressionNode,
   BoundBinaryExpressionNode,
   BoundBooleanLiteralNode,
-  BoundFunctionCallNode,
   BoundIdentifierNode,
   BoundMemberExpressionNode,
   BoundNumberLiteralNode,
@@ -40,8 +39,6 @@ function evaluateNode(
       return evaluateIdentifier(node, context);
     case "BoundMemberExpression":
       return evaluateMemberExpression(node, context);
-    case "BoundFunctionCall":
-      return evaluateFunctionCall(node, context);
     case "BoundUnaryExpression":
       return evaluateUnaryExpression(node, context);
     case "BoundBinaryExpression":
@@ -125,76 +122,6 @@ function evaluateMemberExpression(
     status: "known",
     value: objectResult.value[memberName] ?? null,
   };
-}
-
-function evaluateFunctionCall(
-  node: BoundFunctionCallNode,
-  context: PreviewContext,
-): PreviewResult {
-  if (node.definition === null) {
-    return {
-      status: "error",
-      message: `Unknown function "${node.functionName}".`,
-    };
-  }
-
-  if (
-    node.arguments.length < node.definition.minArgumentCount
-    || node.arguments.length > node.definition.maxArgumentCount
-  ) {
-    return {
-      status: "error",
-      message: `Function "${node.functionName}" cannot be previewed with ${node.arguments.length} arguments.`,
-    };
-  }
-
-  const argumentResults = node.arguments.map((argument) => evaluateNode(argument, context));
-
-  for (const argumentResult of argumentResults) {
-    if (argumentResult.status === "error") {
-      return argumentResult;
-    }
-  }
-
-  if (argumentResults.some((argumentResult) => argumentResult.status === "unknown")) {
-    return {status: "unknown"};
-  }
-
-  const knownArguments = argumentResults
-    .filter((argumentResult): argumentResult is Extract<PreviewResult, { status: "known" }> => argumentResult.status === "known")
-    .map((argumentResult) => argumentResult.value);
-
-  switch (node.definition.name) {
-    case "sum":
-    case "avg": {
-      const value = knownArguments[0];
-
-      if (typeof value !== "number") {
-        return {
-          status: "error",
-          message: `Function "${node.functionName}" requires a numeric preview value.`,
-        };
-      }
-
-      return {
-        status: "known",
-        value,
-      };
-    }
-
-    case "count": {
-      const value = knownArguments[0];
-
-      if (Array.isArray(value)) {
-        return {
-          status: "known",
-          value: value.length,
-        };
-      }
-
-      return {status: "unknown"};
-    }
-  }
 }
 
 function evaluateUnaryExpression(

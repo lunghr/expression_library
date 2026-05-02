@@ -3,7 +3,6 @@ import type {
   BinaryExpressionNode,
   BooleanLiteralNode,
   ExpressionNode,
-  FunctionCallNode,
   IdentifierNode,
   MemberExpressionNode,
   NumberLiteralNode,
@@ -17,7 +16,6 @@ export type {
   BinaryExpressionNode,
   BooleanLiteralNode,
   ExpressionNode,
-  FunctionCallNode,
   IdentifierNode,
   MemberExpressionNode,
   NumberLiteralNode,
@@ -29,7 +27,6 @@ export type {
 export {
   createBinaryExpression,
   createBooleanLiteral,
-  createFunctionCall,
   createIdentifier,
   createMemberExpression,
   createNumberLiteral,

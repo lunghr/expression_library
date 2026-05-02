@@ -32,18 +32,18 @@ describe("parser layout and spans", () => {
     expect(result.root.right.span).toEqual({start: 11, end: 12});
   });
 
-  it("keeps span for function calls", () => {
-    const result = parseExpression("sum(user.age)");
+  it("keeps span for unary expressions", () => {
+    const result = parseExpression("!user.active");
 
-    expect(result.root?.kind).toBe("FunctionCall");
+    expect(result.root?.kind).toBe("UnaryExpression");
 
-    if (result.root?.kind !== "FunctionCall") {
-      throw new Error("Expected FunctionCall root.");
+    if (result.root?.kind !== "UnaryExpression") {
+      throw new Error("Expected UnaryExpression root.");
     }
 
-    expect(result.root.span).toEqual({start: 0, end: 13});
-    expect(result.root.functionName.span).toEqual({start: 0, end: 3});
-    expect(result.root.arguments[0]?.span).toEqual({start: 4, end: 12});
+    expect(result.root.span).toEqual({start: 0, end: 12});
+    expect(result.root.operatorSpan).toEqual({start: 0, end: 1});
+    expect(result.root.operand.span).toEqual({start: 1, end: 12});
   });
 
   it("keeps diagnostic span for missing closing parenthesis", () => {
@@ -70,11 +70,11 @@ describe("parser layout and spans", () => {
     expect(result.diagnostics[0]?.span).toEqual({start: 4, end: 5});
   });
 
-  it("keeps incomplete function call usable during typing", () => {
-    const result = parseExpression("sum(User.age");
+  it("keeps incomplete grouping usable during typing", () => {
+    const result = parseExpression("(User.age");
 
-    expect(result.root?.kind).toBe("FunctionCall");
+    expect(result.root?.kind).toBe("MemberExpression");
     expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR002"]);
-    expect(result.root?.span).toEqual({start: 0, end: 12});
+    expect(result.root?.span).toEqual({start: 1, end: 9});
   });
 });

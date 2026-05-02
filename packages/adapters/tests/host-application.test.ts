@@ -96,7 +96,7 @@ describe("host application adapter", () => {
     expect(submitted.transport.response.executionResult.status).toBe("success");
   });
 
-  it("build processing and data transfer via built-in adapters", async () => {
+  it("build processing and data transfer via demo adapters", async () => {
     const metadataProvider: MetadataProviderAdapter = {
       loadMetadataSource() {
         return {

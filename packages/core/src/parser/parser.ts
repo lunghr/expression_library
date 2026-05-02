@@ -8,7 +8,6 @@ import type {
 import {
   createBinaryExpression,
   createBooleanLiteral,
-  createFunctionCall,
   createIdentifier,
   createMemberExpression,
   createNumberLiteral,
@@ -178,13 +177,7 @@ class Parser {
         return createBooleanLiteral(token.lexeme === "true", token.span);
       }
 
-      const functionName = createIdentifier(token.lexeme, token.span);
-
-      if (this.current().kind === "OpenParen") {
-        return this.parseFunctionCall(functionName);
-      }
-
-      return functionName;
+      return createIdentifier(token.lexeme, token.span);
     }
 
     if (token.kind === "OpenParen") {
@@ -253,64 +246,6 @@ class Parser {
 
     this.consume();
     return expression;
-  }
-
-  private parseFunctionCall(functionName: IdentifierNode): AnyExpressionNode {
-    const openParen = this.consume();
-    const argumentsList: AnyExpressionNode[] = [];
-    let expectArgument = this.current().kind !== "CloseParen";
-
-    while (this.current().kind !== "CloseParen" && this.current().kind !== "End") {
-      const argument = this.parseBinaryExpression(0);
-
-      if (argument !== null) {
-        argumentsList.push(argument);
-        expectArgument = false;
-      } else {
-        expectArgument = true;
-        break;
-      }
-
-      if (this.current().kind === "Comma") {
-        this.consume();
-        expectArgument = true;
-        continue;
-      }
-
-      break;
-    }
-
-    if (expectArgument && this.current().kind !== "CloseParen") {
-      const span = this.reader.previous()?.kind === "Comma"
-        ? this.reader.previous()?.span ?? openParen.span
-        : openParen.span;
-      this.diagnostics.push(
-        createDiagnostic(
-          "PAR001",
-          `Expected expression inside "${functionName.name}(...)" call.`,
-          span,
-        ),
-      );
-    }
-
-    if (this.current().kind !== "CloseParen") {
-      this.diagnostics.push(
-        createDiagnostic(
-          "PAR002",
-          'Expected closing ")" after expression.',
-          this.reader.createSpanFrom(openParen),
-        ),
-      );
-
-      return createFunctionCall(
-        functionName,
-        argumentsList,
-        this.reader.createSpanFrom(openParen),
-      );
-    }
-
-    const closingParen = this.consume();
-    return createFunctionCall(functionName, argumentsList, closingParen.span);
   }
 
   private parseMemberAccess(expression: AnyExpressionNode): AnyExpressionNode {

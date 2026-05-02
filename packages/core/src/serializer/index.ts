@@ -2,7 +2,6 @@ export type {
   JsonBinaryExpressionNode,
   JsonBooleanLiteralNode,
   JsonExpressionNode,
-  JsonFunctionCallNode,
   JsonIdentifierNode,
   JsonMemberNode,
   JsonNumberLiteralNode,

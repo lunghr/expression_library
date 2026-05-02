@@ -75,21 +75,6 @@ describe("serialization", () => {
         },
       },
       {
-        source: "sum(User.age)",
-        expected: {
-          type: "function_call",
-          functionName: "sum",
-          span: {start: 0, end: 13},
-          arguments: [
-            {
-              type: "member",
-              path: ["User", "age"],
-              span: {start: 4, end: 12},
-            },
-          ],
-        },
-      },
-      {
         source: "-1",
         expected: {
           type: "unary",
@@ -104,37 +89,30 @@ describe("serialization", () => {
         },
       },
       {
-        source: 'sum(User.age) + "A" == "A"',
+        source: 'User.age + "A" == "A"',
         expected: {
           type: "binary",
           operator: "==",
-          span: {start: 0, end: 26},
+          span: {start: 0, end: 21},
           left: {
             type: "binary",
             operator: "+",
-            span: {start: 0, end: 19},
+            span: {start: 0, end: 14},
             left: {
-              type: "function_call",
-              functionName: "sum",
-              span: {start: 0, end: 13},
-              arguments: [
-                {
-                  type: "member",
-                  path: ["User", "age"],
-                  span: {start: 4, end: 12},
-                },
-              ],
+              type: "member",
+              path: ["User", "age"],
+              span: {start: 0, end: 8},
             },
             right: {
               type: "string",
               value: "A",
-              span: {start: 16, end: 19},
+              span: {start: 11, end: 14},
             },
           },
           right: {
             type: "string",
             value: "A",
-            span: {start: 23, end: 26},
+            span: {start: 18, end: 21},
           },
         },
       },

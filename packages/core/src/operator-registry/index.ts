@@ -1,7 +1,4 @@
 export type {
-  BuiltInFunctionArgumentType,
-  BuiltInFunctionDefinition,
-  BuiltInFunctionName,
   OperatorAssociativity,
   OperatorCategory,
   OperatorDefinition,
@@ -9,14 +6,12 @@ export type {
   UnaryOperatorDefinition,
 } from "./contracts.js";
 export {
-  getBuiltInFunctionDefinition,
   getBinaryOperatorDefinitionBySymbol,
   getBinaryOperatorDefinitionByTokenKind,
   getUnaryOperatorDefinitionBySymbol,
   getUnaryOperatorDefinitionByTokenKind,
   isBinaryOperatorTokenKind,
   isUnaryOperatorTokenKind,
-  listBuiltInFunctionDefinitions,
   listBinaryOperatorDefinitions,
   listUnaryOperatorDefinitions,
   operatorRegistry,

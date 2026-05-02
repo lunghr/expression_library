@@ -46,14 +46,6 @@ export function serializeExpressionToJsonAst(
         span: node.span,
       };
 
-    case "FunctionCall":
-      return {
-        type: "function_call",
-        functionName: node.functionName.name,
-        arguments: node.arguments.map(serializeExpressionToJsonAst),
-        span: node.span,
-      };
-
     case "UnaryExpression":
       return {
         type: "unary",

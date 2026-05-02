@@ -3,7 +3,6 @@ import type {
   BinaryExpressionNode,
   BinaryOperator,
   BooleanLiteralNode,
-  FunctionCallNode,
   IdentifierNode,
   MemberExpressionNode,
   NumberLiteralNode,
@@ -15,7 +14,6 @@ import type {
 import type { Diagnostic } from "../diagnostics/index.js";
 import type { MetadataField, MetadataModel } from "../metadata/index.js";
 import type {
-  BuiltInFunctionDefinition,
   OperatorDefinition,
   UnaryOperatorDefinition,
 } from "../operator-registry/index.js";
@@ -34,7 +32,6 @@ export interface BoundExpressionNode {
     | "BoundBooleanLiteral"
     | "BoundIdentifier"
     | "BoundMemberExpression"
-    | "BoundFunctionCall"
     | "BoundUnaryExpression"
     | "BoundBinaryExpression";
   readonly span: SourceSpan;
@@ -74,14 +71,6 @@ export interface BoundBooleanLiteralNode extends BoundExpressionNode {
   readonly value: boolean;
 }
 
-export interface BoundFunctionCallNode extends BoundExpressionNode {
-  readonly kind: "BoundFunctionCall";
-  readonly source: FunctionCallNode;
-  readonly functionName: string;
-  readonly definition: BuiltInFunctionDefinition | null;
-  readonly arguments: readonly AnyBoundExpressionNode[];
-}
-
 export interface BoundBinaryExpressionNode extends BoundExpressionNode {
   readonly kind: "BoundBinaryExpression";
   readonly source: BinaryExpressionNode;
@@ -109,7 +98,6 @@ export type AnyBoundExpressionNode =
   | BoundBooleanLiteralNode
   | BoundIdentifierNode
   | BoundMemberExpressionNode
-  | BoundFunctionCallNode
   | BoundUnaryExpressionNode
   | BoundBinaryExpressionNode;
 

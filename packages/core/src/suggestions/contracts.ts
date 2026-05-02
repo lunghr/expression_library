@@ -1,6 +1,6 @@
 import type { SourceSpan } from "../contracts/index.js";
 
-export type SuggestionKind = "model" | "field" | "operator" | "function";
+export type SuggestionKind = "model" | "field" | "operator";
 
 export interface SuggestionItem {
   readonly kind: SuggestionKind;

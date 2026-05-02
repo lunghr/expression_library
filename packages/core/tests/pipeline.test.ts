@@ -105,11 +105,10 @@ describe("core expression pipeline", () => {
     ]);
   });
 
-  it("tokenizes function calls and commas", () => {
-    const result = tokenize("sum(user.age, 1)");
+  it("tokenizes commas inside grouped expressions", () => {
+    const result = tokenize("(user.age, 1)");
 
     expect(result.tokens.map((token) => token.kind)).toEqual([
-      "Identifier",
       "OpenParen",
       "Identifier",
       "Dot",
@@ -171,16 +170,6 @@ describe("core expression pipeline", () => {
     expect(result.root ? serializeExpression(result.root) : undefined).toBe("user.age");
   });
 
-  it('parses and serializes "sum(User.age)"', () => {
-    const result = parseExpression("sum(User.age)");
-
-    expect(result.diagnostics).toHaveLength(0);
-    expect(result.root?.kind).toBe("FunctionCall");
-    expect(result.root?.kind === "FunctionCall" ? result.root.functionName.name : undefined).toBe("sum");
-    expect(result.root?.kind === "FunctionCall" ? result.root.arguments[0]?.kind : undefined).toBe("MemberExpression");
-    expect(result.root ? serializeExpression(result.root) : undefined).toBe("sum(User.age)");
-  });
-
   it("parses and serializes string and boolean literals", () => {
     const stringResult = parseExpression('"Moscow"');
     const booleanResult = parseExpression("true");
@@ -200,14 +189,6 @@ describe("core expression pipeline", () => {
     expect(result.diagnostics).toHaveLength(0);
     expect(result.root?.kind).toBe("BinaryExpression");
     expect(result.root ? serializeExpression(result.root) : undefined).toBe("-(1 + 2) * !false");
-  });
-
-  it("preserves function calls inside binary expressions", () => {
-    const result = parseExpression("sum(User.age) + 1");
-
-    expect(result.diagnostics).toHaveLength(0);
-    expect(result.root?.kind).toBe("BinaryExpression");
-    expect(result.root ? serializeExpression(result.root) : undefined).toBe("sum(User.age) + 1");
   });
 
   it("parses arithmetic precedence correctly", () => {

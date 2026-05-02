@@ -148,47 +148,11 @@ describe("semantic binding", () => {
     expect(bound.root?.type).toBe("boolean");
   });
 
-  it("binds a known built-in function call", () => {
-    const parsed = parseExpression("sum(User.age)");
+  it("reports an unknown identifier for invalid call-like syntax", () => {
+    const parsed = parseExpression("Calc(User.age)");
     const bound = bindExpression(parsed.root, createTestCatalog());
 
-    expect(parsed.diagnostics).toHaveLength(0);
-    expect(bound.diagnostics).toHaveLength(0);
-    expect(bound.root?.kind).toBe("BoundFunctionCall");
-    expect(bound.root?.type).toBe("number");
-    expect(bound.root?.kind === "BoundFunctionCall" ? bound.root.definition?.name : undefined).toBe("sum");
-  });
-
-  it("reports an unknown built-in function", () => {
-    const parsed = parseExpression("median(User.age)");
-    const bound = bindExpression(parsed.root, createTestCatalog());
-
-    expect(parsed.diagnostics).toHaveLength(0);
-    expect(bound.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM005"]);
-  });
-
-  it("reports an invalid built-in function argument count", () => {
-    const parsed = parseExpression("sum()");
-    const bound = bindExpression(parsed.root, createTestCatalog());
-
-    expect(parsed.diagnostics).toHaveLength(0);
-    expect(bound.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM006"]);
-  });
-
-  it("reports an invalid built-in function argument type", () => {
-    const parsed = parseExpression("avg(User.active)");
-    const bound = bindExpression(parsed.root, createTestCatalog());
-
-    expect(parsed.diagnostics).toHaveLength(0);
-    expect(bound.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM007"]);
-  });
-
-  it("keeps count simple and accepts one argument of any type", () => {
-    const parsed = parseExpression("count(User.active)");
-    const bound = bindExpression(parsed.root, createTestCatalog());
-
-    expect(parsed.diagnostics).toHaveLength(0);
-    expect(bound.diagnostics).toHaveLength(0);
-    expect(bound.root?.type).toBe("number");
+    expect(parsed.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR003"]);
+    expect(bound.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM001"]);
   });
 });

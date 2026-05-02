@@ -40,21 +40,6 @@ describe("live editing parser behavior", () => {
     });
   });
 
-  it("keeps open function calls usable", () => {
-    const result = parseExpression("sum(");
-
-    expect(result.root?.kind).toBe("FunctionCall");
-    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
-      "PAR001",
-      "PAR002",
-    ]);
-    expect(result.diagnostics[0]).toMatchObject({
-      category: "syntax",
-      severity: "error",
-      span: {start: 3, end: 4},
-    });
-  });
-
   it("reports empty open grouping with consistent recovery diagnostics", () => {
     const result = parseExpression("(");
 
@@ -71,19 +56,18 @@ describe("live editing parser behavior", () => {
     expect(result.diagnostics[1]?.span).toEqual({start: 0, end: 1});
   });
 
-  it("keeps function calls with trailing comma usable", () => {
-    const result = parseExpression("sum(User.age,");
+  it("keeps grouped expressions with trailing comma recoverable", () => {
+    const result = parseExpression("(User.age,");
 
-    expect(result.root?.kind).toBe("FunctionCall");
-    expect(result.root?.kind === "FunctionCall" ? result.root.arguments : []).toHaveLength(1);
+    expect(result.root?.kind).toBe("MemberExpression");
     expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
-      "PAR001",
       "PAR002",
+      "PAR003",
     ]);
-    expect(result.diagnostics[0]).toMatchObject({
+    expect(result.diagnostics[1]).toMatchObject({
       category: "syntax",
       severity: "error",
-      span: {start: 12, end: 13},
+      span: {start: 9, end: 10},
     });
   });
 

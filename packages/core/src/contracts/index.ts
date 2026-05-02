@@ -30,7 +30,6 @@ export interface ExpressionNode {
     | "BooleanLiteral"
     | "Identifier"
     | "MemberExpression"
-    | "FunctionCall"
     | "UnaryExpression"
     | "BinaryExpression";
   readonly span: SourceSpan;
@@ -82,12 +81,6 @@ export interface MemberExpressionNode extends ExpressionNode {
 
 export type ReferenceExpressionNode = IdentifierNode | MemberExpressionNode;
 
-export interface FunctionCallNode extends ExpressionNode {
-  readonly kind: "FunctionCall";
-  readonly functionName: IdentifierNode;
-  readonly arguments: readonly AnyExpressionNode[];
-}
-
 export interface UnaryExpressionNode extends ExpressionNode {
   readonly kind: "UnaryExpression";
   readonly operator: UnaryOperator;
@@ -109,7 +102,6 @@ export type AnyExpressionNode =
   | BooleanLiteralNode
   | IdentifierNode
   | MemberExpressionNode
-  | FunctionCallNode
   | UnaryExpressionNode
   | BinaryExpressionNode;
 

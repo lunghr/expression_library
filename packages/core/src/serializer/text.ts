@@ -33,13 +33,6 @@ function serializeNode(
     return `${serializeReference(node.object)}.${node.member.name}`;
   }
 
-  if (node.kind === "FunctionCall") {
-    const argumentsList = node.arguments
-      .map((argument) => serializeNode(argument, 0, "root"))
-      .join(", ");
-    return `${node.functionName.name}(${argumentsList})`;
-  }
-
   if (node.kind === "UnaryExpression") {
     const definition = getUnaryOperatorDefinitionBySymbol(node.operator);
 

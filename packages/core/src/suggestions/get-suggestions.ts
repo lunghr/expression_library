@@ -4,10 +4,7 @@ import {
   tokenize,
 } from "../lexer/index.js";
 import type { ModelCatalog } from "../model-catalog/index.js";
-import {
-  listBinaryOperatorDefinitions,
-  listBuiltInFunctionDefinitions,
-} from "../operator-registry/index.js";
+import { listBinaryOperatorDefinitions } from "../operator-registry/index.js";
 import { parseExpression } from "../parser/index.js";
 
 import type { SuggestionItem, SuggestionResult } from "./contracts.js";
@@ -37,23 +34,6 @@ export function getSuggestions(
     };
   }
 
-  const functionArgumentContext = readFunctionArgumentContext(
-    significantTokens,
-    safeCursor,
-  );
-
-  if (functionArgumentContext !== null) {
-    return {
-      items: getRootSuggestions(
-        functionArgumentContext.prefix,
-        functionArgumentContext.replaceStart,
-        safeCursor,
-        catalog,
-        {includeFunctions: true},
-      ),
-    };
-  }
-
   const rootPrefixContext = readRootPrefixContext(significantTokens, safeCursor);
 
   if (rootPrefixContext !== null) {
@@ -63,7 +43,6 @@ export function getSuggestions(
         rootPrefixContext.replaceStart,
         safeCursor,
         catalog,
-        {includeFunctions: true},
       ),
     };
   }
@@ -129,9 +108,8 @@ function getRootSuggestions(
   replaceStart: number,
   cursor: number,
   catalog: ModelCatalog,
-  options: { readonly includeFunctions: boolean },
 ): SuggestionItem[] {
-  const modelSuggestions = catalog.models
+  return catalog.models
     .filter((model) => model.name.startsWith(prefix))
     .map((model) => ({
       kind: "model" as const,
@@ -140,23 +118,6 @@ function getRootSuggestions(
       detail: "model",
       replaceSpan: {start: replaceStart, end: cursor},
     }));
-
-  if (!options.includeFunctions) {
-    return modelSuggestions;
-  }
-
-  return [
-    ...modelSuggestions,
-    ...listBuiltInFunctionDefinitions()
-      .filter((definition) => definition.name.startsWith(prefix))
-      .map((definition) => ({
-        kind: "function" as const,
-        label: definition.name,
-        insertText: `${definition.name}(`,
-        detail: `${definition.name}(...)`,
-        replaceSpan: {start: replaceStart, end: cursor},
-      })),
-  ];
 }
 
 function readMemberContext(
@@ -219,57 +180,6 @@ function readMemberContext(
     prefix,
     replaceStart,
   };
-}
-
-function readFunctionArgumentContext(
-  tokens: readonly Token[],
-  cursor: number,
-): { prefix: string; replaceStart: number } | null {
-  if (tokens.length === 0) {
-    return null;
-  }
-
-  let depth = 0;
-
-  for (let index = tokens.length - 1; index >= 0; index -= 1) {
-    const token = tokens[index];
-
-    if (token?.kind === "CloseParen") {
-      depth += 1;
-      continue;
-    }
-
-    if (token?.kind === "OpenParen") {
-      if (depth > 0) {
-        depth -= 1;
-        continue;
-      }
-
-      if (tokens[index - 1]?.kind !== "Identifier") {
-        return null;
-      }
-
-      const lastToken = tokens[tokens.length - 1];
-
-      if (lastToken?.kind === "Identifier" && lastToken.span.end === cursor) {
-        if (tokens[tokens.length - 2]?.kind === "Dot") {
-          return null;
-        }
-
-        return {
-          prefix: lastToken.lexeme,
-          replaceStart: lastToken.span.start,
-        };
-      }
-
-      return {
-        prefix: "",
-        replaceStart: cursor,
-      };
-    }
-  }
-
-  return null;
 }
 
 function readRootPrefixContext(

@@ -2,8 +2,6 @@ import type { BinaryOperator, UnaryOperator } from "../contracts/index.js";
 import type { TokenKind } from "../lexer/index.js";
 
 import type {
-  BuiltInFunctionDefinition,
-  BuiltInFunctionName,
   OperatorDefinition,
   OperatorRegistry,
   UnaryOperatorDefinition,
@@ -129,38 +127,9 @@ const unaryOperatorBySymbol = new Map<UnaryOperator, UnaryOperatorDefinition>(
   unaryOperators.map((operator) => [operator.symbol, operator]),
 );
 
-const builtInFunctions = [
-  {
-    name: "sum",
-    minArgumentCount: 1,
-    maxArgumentCount: 1,
-    argumentTypes: ["number"],
-    returnType: "number",
-  },
-  {
-    name: "avg",
-    minArgumentCount: 1,
-    maxArgumentCount: 1,
-    argumentTypes: ["number"],
-    returnType: "number",
-  },
-  {
-    name: "count",
-    minArgumentCount: 1,
-    maxArgumentCount: 1,
-    argumentTypes: ["any"],
-    returnType: "number",
-  },
-] as const satisfies readonly BuiltInFunctionDefinition[];
-
-const functionByName = new Map<BuiltInFunctionName, BuiltInFunctionDefinition>(
-  builtInFunctions.map((definition) => [definition.name, definition]),
-);
-
 export const operatorRegistry: OperatorRegistry = {
   operators: binaryOperators,
   unaryOperators,
-  functions: builtInFunctions,
 };
 
 export function getBinaryOperatorDefinitionByTokenKind(
@@ -201,14 +170,4 @@ export function listBinaryOperatorDefinitions(): readonly OperatorDefinition[] {
 
 export function listUnaryOperatorDefinitions(): readonly UnaryOperatorDefinition[] {
   return operatorRegistry.unaryOperators;
-}
-
-export function getBuiltInFunctionDefinition(
-  name: string,
-): BuiltInFunctionDefinition | null {
-  return functionByName.get(name as BuiltInFunctionName) ?? null;
-}
-
-export function listBuiltInFunctionDefinitions(): readonly BuiltInFunctionDefinition[] {
-  return operatorRegistry.functions;
 }

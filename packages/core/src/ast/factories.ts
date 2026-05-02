@@ -3,7 +3,6 @@ import type {
   BinaryExpressionNode,
   BinaryOperator,
   BooleanLiteralNode,
-  FunctionCallNode,
   IdentifierNode,
   MemberExpressionNode,
   NumberLiteralNode,
@@ -72,19 +71,6 @@ export function createMemberExpression(
     object,
     member,
     span: createSourceSpan(object.span.start, member.span.end),
-  };
-}
-
-export function createFunctionCall(
-  functionName: IdentifierNode,
-  argumentsList: readonly AnyExpressionNode[],
-  closingSpan: SourceSpan,
-): FunctionCallNode {
-  return {
-    kind: "FunctionCall",
-    functionName,
-    arguments: argumentsList,
-    span: createSourceSpan(functionName.span.start, closingSpan.end),
   };
 }
 
