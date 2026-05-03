@@ -16,7 +16,7 @@ export interface ResultPanelProps {
   readonly submission?: SubmissionResultView | null;
 }
 
-export function ResultPanel({result, submission = null}: ResultPanelProps) {
+export function ResultPanel({result, submission}: ResultPanelProps) {
   return (
     <>
       <div data-testid="processing-state" style={panelStyle}>
@@ -29,10 +29,12 @@ export function ResultPanel({result, submission = null}: ResultPanelProps) {
         <div>{result.expression ?? "(none)"}</div>
       </div>
 
-      <div style={panelStyle}>
-        <div>Execution Result</div>
-        <div>{getSubmissionLabel(submission)}</div>
-      </div>
+      {submission === undefined ? null : (
+        <div style={panelStyle}>
+          <div>Execution Result</div>
+          <div>{getSubmissionLabel(submission)}</div>
+        </div>
+      )}
     </>
   );
 }

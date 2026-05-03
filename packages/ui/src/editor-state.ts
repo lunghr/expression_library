@@ -2,20 +2,18 @@ import {
   getSuggestions,
   processExpressionResult,
   type ModelCatalog,
+  type PreviewContext,
   type ProcessedExpressionResult,
+  type RootBindingContext,
   type SuggestionResult,
 } from "@expression-editor/core";
 import { useEffect, useMemo, useState } from "react";
-
-import type { SubmissionResultView } from "./submission-result.js";
 
 export interface EditorStateSnapshot {
   readonly text: string;
   readonly cursor: number;
   readonly result: ProcessedExpressionResult;
   readonly suggestions: SuggestionResult;
-  readonly submission: SubmissionResultView | null;
-  readonly isSubmitting: boolean;
 }
 
 export interface EditorStateController {
@@ -23,7 +21,6 @@ export interface EditorStateController {
   setText(nextText: string): void;
   setCursor(nextCursor: number): void;
   updateText(nextText: string, nextCursor?: number): void;
-  submitExpression(): Promise<void>;
 }
 
 export interface UseEditorStateOptions {
@@ -31,8 +28,9 @@ export interface UseEditorStateOptions {
   readonly initialText?: string;
   readonly value?: string;
   readonly onValueChange?: (value: string) => void;
-  readonly onSubmitExpression?: (value: string) => Promise<SubmissionResultView>;
-  readonly metadataVersion?: number;
+  readonly rootBindings?: RootBindingContext;
+  readonly previewContext?: PreviewContext;
+  readonly onAnalysisChange?: (result: ProcessedExpressionResult) => void;
 }
 
 export function useEditorState({
@@ -40,13 +38,12 @@ export function useEditorState({
   initialText = "User.age > 18 && User.active",
   value,
   onValueChange,
-  onSubmitExpression,
-  metadataVersion,
+  rootBindings,
+  previewContext,
+  onAnalysisChange,
 }: UseEditorStateOptions): EditorStateController {
   const [text, setTextState] = useState(value ?? initialText);
   const [cursor, setCursorState] = useState((value ?? initialText).length);
-  const [submission, setSubmission] = useState<SubmissionResultView | null>(null);
-  const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
     if (value === undefined) {
@@ -58,17 +55,17 @@ export function useEditorState({
   }, [value]);
 
   const result = useMemo(
-    () => processExpressionResult(text, catalog),
-    [catalog, text],
+    () => processExpressionResult(text, catalog, previewContext, rootBindings),
+    [catalog, previewContext, rootBindings, text],
   );
   const suggestions = useMemo(
-    () => getSuggestions(text, cursor, catalog),
-    [catalog, cursor, text],
+    () => getSuggestions(text, cursor, catalog, rootBindings),
+    [catalog, cursor, rootBindings, text],
   );
 
   useEffect(() => {
-    setSubmission(null);
-  }, [metadataVersion]);
+    onAnalysisChange?.(result);
+  }, [onAnalysisChange, result]);
 
   function setText(nextText: string): void {
     if (value === undefined) {
@@ -91,33 +88,15 @@ export function useEditorState({
     onValueChange?.(nextText);
   }
 
-  async function submitExpression(): Promise<void> {
-    if (onSubmitExpression === undefined) {
-      return;
-    }
-
-    setIsSubmitting(true);
-
-    try {
-      const nextSubmission = await onSubmitExpression(text);
-      setSubmission(nextSubmission);
-    } finally {
-      setIsSubmitting(false);
-    }
-  }
-
   return {
     snapshot: {
       text,
       cursor,
       result,
       suggestions,
-      submission,
-      isSubmitting,
     },
     setText,
     setCursor,
     updateText,
-    submitExpression,
   };
 }

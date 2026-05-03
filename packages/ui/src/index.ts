@@ -1,7 +1,6 @@
 export { DiagnosticsPanel } from "./diagnostics-panel.js";
-export type { EditorShellProps } from "./editor-shell.js";
-export { EditorShell } from "./editor-shell.js";
-export type { SubmissionResultView } from "./submission-result.js";
+export type { ExpressionEditorProps } from "./expression-editor.js";
+export { ExpressionEditor } from "./expression-editor.js";
 export type {
   EditorStateController,
   EditorStateSnapshot,

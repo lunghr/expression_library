@@ -1,5 +1,5 @@
 import { createDemoHostApplication } from "@expression-editor/adapters";
-import type { ModelCatalog } from "@expression-editor/core";
+import type { ModelCatalog, RootBindingContext } from "@expression-editor/core";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
@@ -35,6 +35,7 @@ interface DemoHostSubmitResult {
 
 interface DemoHostServices {
   readonly catalog: ModelCatalog;
+  readonly rootBindings: RootBindingContext;
   submitExpression(source: string): Promise<DemoHostSubmitResult>;
   refreshMetadata(): Promise<ModelCatalog>;
 }
@@ -68,7 +69,6 @@ function DemoApplication() {
   const [services, setServices] = useState<DemoHostServices | null>(null);
   const [catalog, setCatalog] = useState<ModelCatalog | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [metadataVersion, setMetadataVersion] = useState(0);
   const [isRefreshingMetadata, setIsRefreshingMetadata] = useState(false);
 
   useEffect(() => {
@@ -113,14 +113,12 @@ function DemoApplication() {
     <EditorShell
       catalog={catalog}
       isRefreshingMetadata={isRefreshingMetadata}
-      metadataVersion={metadataVersion}
       onRefreshMetadata={async () => {
         setIsRefreshingMetadata(true);
 
         try {
           const nextCatalog = await services.refreshMetadata();
           setCatalog(nextCatalog);
-          setMetadataVersion((currentVersion) => currentVersion + 1);
         } finally {
           setIsRefreshingMetadata(false);
         }
@@ -129,6 +127,7 @@ function DemoApplication() {
         const submission = await services.submitExpression(source);
         return mapSubmissionResult(submission);
       }}
+      rootBindings={services.rootBindings}
     />
   );
 }

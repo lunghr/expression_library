@@ -1,18 +1,29 @@
-import type { ModelCatalog } from "@expression-editor/core";
-import type { CSSProperties } from "react";
+import type {
+  ModelCatalog,
+  PreviewContext,
+  RootBindingContext,
+} from "@expression-editor/core";
+import { useEffect, useState, type CSSProperties } from "react";
 
-import { DiagnosticsPanel } from "./diagnostics-panel.js";
-import { useEditorState } from "./editor-state.js";
-import { ResultPanel } from "./result-panel.js";
-import type { SubmissionResultView } from "./submission-result.js";
-import { SuggestionPanel } from "./suggestion-panel.js";
-import { TextModeRenderer } from "./text-mode-renderer.js";
+import {
+  ExpressionEditor,
+  type ExpressionEditorProps,
+} from "./expression-editor.js";
+import type {
+  ExecutionResultView,
+  SubmissionResultView,
+} from "./submission-result.js";
 
 const shellStyle = {
   display: "grid",
   gap: "12px",
   maxWidth: "880px",
   fontFamily: "sans-serif",
+} satisfies CSSProperties;
+
+const actionsStyle = {
+  display: "flex",
+  gap: "8px",
 } satisfies CSSProperties;
 
 const panelStyle = {
@@ -25,10 +36,11 @@ export interface EditorShellProps {
   readonly initialValue?: string;
   readonly value?: string;
   readonly onValueChange?: (value: string) => void;
+  readonly rootBindings?: RootBindingContext;
+  readonly previewContext?: PreviewContext;
   readonly onSubmitExpression?: (value: string) => Promise<SubmissionResultView>;
   readonly onRefreshMetadata?: () => Promise<void>;
   readonly isRefreshingMetadata?: boolean;
-  readonly metadataVersion?: number;
 }
 
 export function EditorShell({
@@ -36,59 +48,122 @@ export function EditorShell({
   initialValue = "User.age > 18 && User.active",
   value,
   onValueChange,
+  rootBindings,
+  previewContext,
   onSubmitExpression,
   onRefreshMetadata,
   isRefreshingMetadata = false,
-  metadataVersion = 0,
 }: EditorShellProps) {
-  const editorState = useEditorState({
+  const [localValue, setLocalValue] = useState(value ?? initialValue);
+  const [submission, setSubmission] = useState<SubmissionResultView | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
+
+  useEffect(() => {
+    if (value === undefined) {
+      return;
+    }
+
+    setLocalValue(value);
+  }, [value]);
+
+  const currentValue = value ?? localValue;
+
+  const editorProps: ExpressionEditorProps = {
     catalog,
-    initialText: initialValue,
-    value,
-    onValueChange,
-    onSubmitExpression,
-    metadataVersion,
-  });
-  const snapshot = editorState.snapshot;
+    value: currentValue,
+    initialValue,
+    onChange: (nextValue) => {
+      if (value === undefined) {
+        setLocalValue(nextValue);
+      }
+
+      setSubmission(null);
+      onValueChange?.(nextValue);
+    },
+    rootBindings,
+    previewContext,
+  };
+
+  async function submitExpression(): Promise<void> {
+    if (onSubmitExpression === undefined) {
+      return;
+    }
+
+    setIsSubmitting(true);
+
+    try {
+      const nextSubmission = await onSubmitExpression(currentValue);
+      setSubmission(nextSubmission);
+    } finally {
+      setIsSubmitting(false);
+    }
+  }
+
+  async function refreshMetadata(): Promise<void> {
+    if (onRefreshMetadata === undefined) {
+      return;
+    }
+
+    await onRefreshMetadata();
+    setSubmission(null);
+  }
 
   return (
     <div style={shellStyle}>
-      <div style={panelStyle}>
-        <div>Expression</div>
-        <TextModeRenderer
-          text={snapshot.text}
-          cursor={snapshot.cursor}
-          onTextChange={(nextText, nextCursor) => {
-            editorState.updateText(nextText, nextCursor);
-          }}
-          onCursorChange={(nextCursor) => {
-            editorState.setCursor(nextCursor);
-          }}
-        />
-        {onSubmitExpression === undefined ? null : (
-          <button
-            onClick={() => {
-              void editorState.submitExpression();
-            }}
-            type="button"
-          >
-            {snapshot.isSubmitting ? "Sending..." : "Send Expression"}
-          </button>
-        )}
-        {onRefreshMetadata === undefined ? null : (
-          <button
-            onClick={() => {
-              void onRefreshMetadata();
-            }}
-            type="button"
-          >
-            {isRefreshingMetadata ? "Reloading..." : "Reload Metadata"}
-          </button>
-        )}
-      </div>
-      <SuggestionPanel suggestions={snapshot.suggestions} />
-      <ResultPanel result={snapshot.result} submission={snapshot.submission} />
-      <DiagnosticsPanel diagnostics={snapshot.result.diagnostics} />
+      <ExpressionEditor {...editorProps} />
+      {onSubmitExpression === undefined && onRefreshMetadata === undefined ? null : (
+        <div style={actionsStyle}>
+          {onSubmitExpression === undefined ? null : (
+            <button
+              onClick={() => {
+                void submitExpression();
+              }}
+              type="button"
+            >
+              {isSubmitting ? "Sending..." : "Send Expression"}
+            </button>
+          )}
+          {onRefreshMetadata === undefined ? null : (
+            <button
+              onClick={() => {
+                void refreshMetadata();
+              }}
+              type="button"
+            >
+              {isRefreshingMetadata ? "Reloading..." : "Reload Metadata"}
+            </button>
+          )}
+        </div>
+      )}
+      {onSubmitExpression === undefined ? null : (
+        <div style={panelStyle}>
+          <div>Execution Result</div>
+          <div>{getSubmissionLabel(submission)}</div>
+        </div>
+      )}
     </div>
   );
+}
+
+function getSubmissionLabel(submission: SubmissionResultView | null): string {
+  if (submission === null) {
+    return "Not submitted.";
+  }
+
+  switch (submission.status) {
+    case "not_sent":
+      return `Not sent: ${submission.reason}`;
+    case "transport_error":
+      return `Transport error: ${submission.message}`;
+    case "sent":
+      return getExecutionLabel(submission.executionResult);
+  }
+}
+
+function getExecutionLabel(executionResult: ExecutionResultView): string {
+  if ("value" in executionResult) {
+    return `Success: ${JSON.stringify(executionResult.value)}`;
+  }
+
+  return `Execution error: ${executionResult.message}`;
 }
