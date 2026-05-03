@@ -3,6 +3,7 @@ import { describe, expect, it } from "vitest";
 import {
   bindExpression,
   createDiagnostic,
+  createRootBindingContext,
   createModelCatalog,
   evaluatePreview,
   getSuggestions,
@@ -42,17 +43,23 @@ describe("public api", () => {
     expect(typeof getSuggestions).toBe("function");
     expect(typeof loadMetadataDocument).toBe("function");
     expect(typeof createModelCatalog).toBe("function");
+    expect(typeof createRootBindingContext).toBe("function");
     expect(typeof serializeExpression).toBe("function");
     expect(typeof serializeExpressionToJsonAst).toBe("function");
     expect(typeof evaluatePreview).toBe("function");
   });
 
   it("returns a stable processed result shape", () => {
-    const result = processExpressionResult("User.age > 18", createTestCatalog());
+    const result = processExpressionResult(
+      "buyer.age > 18",
+      createTestCatalog(),
+      undefined,
+      createRootBindingContext([{name: "buyer", modelName: "User"}]),
+    );
 
     expect(result).toMatchObject({
       status: "success",
-      expression: "User.age > 18",
+      expression: "buyer.age > 18",
       expressionJson: {
         type: "binary",
         operator: ">",

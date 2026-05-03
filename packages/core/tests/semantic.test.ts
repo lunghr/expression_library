@@ -1,6 +1,12 @@
 import { describe, expect, it } from "vitest";
 
-import { bindExpression, createModelCatalog, loadMetadataDocument, parseExpression, } from "../src/index.js";
+import {
+  bindExpression,
+  createModelCatalog,
+  createRootBindingContext,
+  loadMetadataDocument,
+  parseExpression,
+} from "../src/index.js";
 
 function createTestCatalog() {
   return createModelCatalog(
@@ -28,9 +34,35 @@ function createTestCatalog() {
 }
 
 describe("semantic binding", () => {
+  it("binds two root identifiers to the same model schema", () => {
+    const parsed = parseExpression("buyer.address.city == seller.address.city");
+    const bound = bindExpression(
+      parsed.root,
+      createTestCatalog(),
+      createRootBindingContext([
+        {name: "buyer", modelName: "User"},
+        {name: "seller", modelName: "User"},
+      ]),
+    );
+
+    expect(parsed.diagnostics).toHaveLength(0);
+    expect(bound.diagnostics).toHaveLength(0);
+    expect(bound.root?.kind).toBe("BoundBinaryExpression");
+    expect(bound.root?.type).toBe("boolean");
+    expect(bound.root?.kind === "BoundBinaryExpression" && bound.root.left.kind === "BoundMemberExpression"
+      ? bound.root.left.object.kind === "BoundMemberExpression" && bound.root.left.object.object.kind === "BoundIdentifier"
+        ? bound.root.left.object.object.binding?.name
+        : null
+      : null).toBe("buyer");
+  });
+
   it("binds a valid model identifier", () => {
     const parsed = parseExpression("User");
-    const bound = bindExpression(parsed.root, createTestCatalog());
+    const bound = bindExpression(
+      parsed.root,
+      createTestCatalog(),
+      createRootBindingContext([{name: "User", modelName: "User"}]),
+    );
 
     expect(parsed.diagnostics).toHaveLength(0);
     expect(bound.diagnostics).toHaveLength(0);
@@ -41,7 +73,11 @@ describe("semantic binding", () => {
 
   it("binds a valid nested member access chain", () => {
     const parsed = parseExpression("User.address.city");
-    const bound = bindExpression(parsed.root, createTestCatalog());
+    const bound = bindExpression(
+      parsed.root,
+      createTestCatalog(),
+      createRootBindingContext([{name: "User", modelName: "User"}]),
+    );
 
     expect(parsed.diagnostics).toHaveLength(0);
     expect(bound.diagnostics).toHaveLength(0);
@@ -53,12 +89,28 @@ describe("semantic binding", () => {
     ]);
   });
 
-  it("reports an unknown identifier", () => {
-    const parsed = parseExpression("Order.total");
-    const bound = bindExpression(parsed.root, createTestCatalog());
+  it("reports an unknown root binding", () => {
+    const parsed = parseExpression("buyer.age");
+    const bound = bindExpression(
+      parsed.root,
+      createTestCatalog(),
+      createRootBindingContext([{name: "seller", modelName: "User"}]),
+    );
 
     expect(parsed.diagnostics).toHaveLength(0);
     expect(bound.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM001"]);
+  });
+
+  it("reports a missing target model behind a root binding", () => {
+    const parsed = parseExpression("buyer.age");
+    const bound = bindExpression(
+      parsed.root,
+      createTestCatalog(),
+      createRootBindingContext([{name: "buyer", modelName: "Account"}]),
+    );
+
+    expect(parsed.diagnostics).toHaveLength(0);
+    expect(bound.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["SEM009"]);
   });
 
   it("reports an unknown field in member access", () => {

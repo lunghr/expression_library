@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createModelCatalog,
+  createRootBindingContext,
   loadMetadataDocument,
   processExpressionResult,
 } from "../src/index.js";
@@ -27,11 +28,19 @@ function createTestCatalog() {
 
 describe("end-to-end core processing", () => {
   it("returns a stable success result", () => {
-    const result = processExpressionResult("User.age > 18 && User.active", createTestCatalog());
+    const result = processExpressionResult(
+      "buyer.age > 18 && seller.active",
+      createTestCatalog(),
+      undefined,
+      createRootBindingContext([
+        {name: "buyer", modelName: "User"},
+        {name: "seller", modelName: "User"},
+      ]),
+    );
 
     expect(result.status).toBe("success");
     expect(result.diagnostics).toHaveLength(0);
-    expect(result.expression).toBe("User.age > 18 && User.active");
+    expect(result.expression).toBe("buyer.age > 18 && seller.active");
   });
 
   it("returns a syntax failure result", () => {

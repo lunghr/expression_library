@@ -2,6 +2,7 @@ import { describe, expect, it } from "vitest";
 
 import {
   createModelCatalog,
+  createRootBindingContext,
   getSuggestions,
   loadMetadataDocument,
 } from "../src/index.js";
@@ -40,7 +41,29 @@ function createTestCatalog() {
   );
 }
 
+function createRootBindings() {
+  return createRootBindingContext([
+    {name: "buyer", modelName: "User"},
+    {name: "seller", modelName: "User"},
+    {name: "order", modelName: "Order"},
+  ]);
+}
+
 describe("suggestions", () => {
+  it("suggests root binding names for an identifier prefix", () => {
+    const result = getSuggestions("bu", 2, createTestCatalog(), createRootBindings());
+
+    expect(result.items).toEqual([
+      {
+        kind: "model",
+        label: "buyer",
+        insertText: "buyer",
+        detail: "User",
+        replaceSpan: {start: 0, end: 2},
+      },
+    ]);
+  });
+
   it("suggests root models for an identifier prefix", () => {
     const result = getSuggestions("Us", 2, createTestCatalog());
 
@@ -49,14 +72,14 @@ describe("suggestions", () => {
         kind: "model",
         label: "User",
         insertText: "User",
-        detail: "model",
+        detail: "User",
         replaceSpan: {start: 0, end: 2},
       },
     ]);
   });
 
   it("suggests top-level fields after model member access", () => {
-    const result = getSuggestions("User.", 5, createTestCatalog());
+    const result = getSuggestions("buyer.", 6, createTestCatalog(), createRootBindings());
 
     expect(result.items.map((item) => item.label)).toEqual(["age", "active", "address"]);
     expect(result.items[0]).toMatchObject({
@@ -64,19 +87,19 @@ describe("suggestions", () => {
       label: "age",
       insertText: "age",
       detail: "number",
-      replaceSpan: {start: 5, end: 5},
+      replaceSpan: {start: 6, end: 6},
     });
   });
 
   it("suggests fields for an incomplete member prefix", () => {
-    const result = getSuggestions("User.a", 6, createTestCatalog());
+    const result = getSuggestions("buyer.a", 7, createTestCatalog(), createRootBindings());
 
     expect(result.items.map((item) => item.label)).toEqual(["age", "active", "address"]);
-    expect(result.items[0]?.replaceSpan).toEqual({start: 5, end: 6});
+    expect(result.items[0]?.replaceSpan).toEqual({start: 6, end: 7});
   });
 
   it("suggests nested fields after object member access", () => {
-    const result = getSuggestions("User.address.", 13, createTestCatalog());
+    const result = getSuggestions("seller.address.", 15, createTestCatalog(), createRootBindings());
 
     expect(result.items).toEqual([
       {
@@ -84,7 +107,7 @@ describe("suggestions", () => {
         label: "city",
         insertText: "city",
         detail: "string",
-        replaceSpan: {start: 13, end: 13},
+        replaceSpan: {start: 15, end: 15},
       },
     ]);
   });
@@ -133,7 +156,7 @@ describe("suggestions", () => {
         kind: "model",
         label: "Order",
         insertText: "Order",
-        detail: "model",
+        detail: "Order",
         replaceSpan: {start: 11, end: 13},
       },
     ]);
@@ -167,7 +190,7 @@ describe("suggestions", () => {
         kind: "model",
         label: "Order",
         insertText: "Order",
-        detail: "model",
+        detail: "Order",
         replaceSpan: {start: 1, end: 3},
       },
     ]);
@@ -181,7 +204,7 @@ describe("suggestions", () => {
         kind: "model",
         label: "Order",
         insertText: "Order",
-        detail: "model",
+        detail: "Order",
         replaceSpan: {start: 11, end: 13},
       },
     ]);

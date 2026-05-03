@@ -6,6 +6,11 @@ import {
 import type { ModelCatalog } from "../model-catalog/index.js";
 import { listBinaryOperatorDefinitions } from "../operator-registry/index.js";
 import { parseExpression } from "../parser/index.js";
+import {
+  createDefaultRootBindingContext,
+  getRootBinding,
+  type RootBindingContext,
+} from "../root-bindings/index.js";
 
 import type { SuggestionItem, SuggestionResult } from "./contracts.js";
 
@@ -13,9 +18,11 @@ export function getSuggestions(
   source: string,
   cursor: number,
   catalog: ModelCatalog,
+  rootBindings?: RootBindingContext,
 ): SuggestionResult {
   const safeCursor = Math.max(0, Math.min(cursor, source.length));
   const beforeCursor = source.slice(0, safeCursor);
+  const bindingContext = rootBindings ?? createDefaultRootBindingContext(catalog);
   const significantTokens = getSignificantTokens(tokenize(beforeCursor).tokens)
     .filter((token) => token.kind !== "End");
 
@@ -27,6 +34,7 @@ export function getSuggestions(
         memberContext.modelName,
         memberContext.path,
         catalog,
+        bindingContext,
         memberContext.prefix,
         memberContext.replaceStart,
         safeCursor,
@@ -43,6 +51,7 @@ export function getSuggestions(
         rootPrefixContext.replaceStart,
         safeCursor,
         catalog,
+        bindingContext,
       ),
     };
   }
@@ -64,13 +73,21 @@ export function getSuggestions(
 }
 
 function getFieldSuggestions(
-  modelName: string,
+  rootName: string,
   path: readonly string[],
   catalog: ModelCatalog,
+  rootBindings: RootBindingContext,
   prefix: string,
   replaceStart: number,
   cursor: number,
 ): SuggestionItem[] {
+  const binding = getRootBinding(rootBindings, rootName);
+  const modelName = binding?.modelName ?? null;
+
+  if (modelName === null) {
+    return [];
+  }
+
   if (path.length === 0) {
     const model = catalog.getModel(modelName);
     return model === null
@@ -108,16 +125,21 @@ function getRootSuggestions(
   replaceStart: number,
   cursor: number,
   catalog: ModelCatalog,
+  rootBindings: RootBindingContext,
 ): SuggestionItem[] {
-  return catalog.models
-    .filter((model) => model.name.startsWith(prefix))
-    .map((model) => ({
+  return rootBindings.bindings
+    .filter((binding) => binding.name.startsWith(prefix))
+    .map((binding) => {
+      const model = catalog.getModel(binding.modelName);
+
+      return {
       kind: "model" as const,
-      label: model.name,
-      insertText: model.name,
-      detail: "model",
+      label: binding.name,
+      insertText: binding.name,
+      detail: model?.name ?? binding.modelName,
       replaceSpan: {start: replaceStart, end: cursor},
-    }));
+      };
+    });
 }
 
 function readMemberContext(

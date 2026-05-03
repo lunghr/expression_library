@@ -12,3 +12,4 @@ export * from "./diagnostics/index.js";
 export * from "./serializer/index.js";
 export * from "./operator-registry/index.js";
 export * from "./preview/index.js";
+export * from "./root-bindings/index.js";

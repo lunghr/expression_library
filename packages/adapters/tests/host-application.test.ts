@@ -75,6 +75,9 @@ describe("host application adapter", () => {
     const services = await hostApplication.initialize();
 
     expect(services.catalog.getModel("User")?.name).toBe("User");
+    expect(services.rootBindings.bindings).toEqual([
+      {name: "User", modelName: "User"},
+    ]);
 
     const processed = services.processExpression("User.age > 18");
     expect(processed.status).toBe("success");
@@ -118,6 +121,10 @@ describe("host application adapter", () => {
     const sentRequests: ExpressionTransportRequest[] = [];
     const hostApplication = createHostApplicationAdapter({
       metadataProvider,
+      rootBindingSource: {
+        buyer: "Order",
+        seller: "Order",
+      },
       expressionTransport: {
         sendExpression(request) {
           sentRequests.push(request);
@@ -135,16 +142,20 @@ describe("host application adapter", () => {
     const services = await hostApplication.initialize();
 
     expect(services.catalog.getModel("Order")?.name).toBe("Order");
+    expect(services.rootBindings.bindings).toEqual([
+      {name: "buyer", modelName: "Order"},
+      {name: "seller", modelName: "Order"},
+    ]);
 
-    const processed = services.processExpression("Order.total + 5");
+    const processed = services.processExpression("buyer.total + seller.total");
     expect(processed.status).toBe("success");
-    expect(processed.expression).toBe("Order.total + 5");
+    expect(processed.expression).toBe("buyer.total + seller.total");
 
-    const submitted = await services.submitExpression("Order.total + 5");
+    const submitted = await services.submitExpression("buyer.total + seller.total");
 
     expect(submitted.transport.status).toBe("sent");
     expect(sentRequests).toHaveLength(1);
-    expect(sentRequests[0]?.canonicalText).toBe("Order.total + 5");
+    expect(sentRequests[0]?.canonicalText).toBe("buyer.total + seller.total");
     expect(sentRequests[0]?.expressionJson).toMatchObject({
       type: "binary",
       operator: "+",
@@ -394,5 +405,51 @@ describe("host application adapter", () => {
     );
 
     expect(services.catalog.getField("User", "age")?.name).toBe("age");
+  });
+
+  it("keeps root bindings stable when an external binding source is provided", async () => {
+    const hostApplication = createHostApplicationAdapter({
+      metadataProvider: {
+        loadMetadataSource() {
+          return {
+            models: [
+              {
+                name: "User",
+                schema: {
+                  type: "object",
+                  properties: {
+                    age: { type: "number" },
+                  },
+                },
+              },
+            ],
+          };
+        },
+      },
+      rootBindingSource: {
+        buyer: "User",
+        seller: "User",
+      },
+      expressionTransport: {
+        sendExpression(request) {
+          return {
+            expression: request.canonicalText,
+            executionResult: {
+              status: "success",
+              value: request.expressionJson,
+            },
+          };
+        },
+      },
+    });
+
+    const services = await hostApplication.initialize();
+    const processed = services.processExpression("buyer.age == seller.age");
+
+    expect(processed.status).toBe("success");
+    expect(services.rootBindings.bindings).toEqual([
+      {name: "buyer", modelName: "User"},
+      {name: "seller", modelName: "User"},
+    ]);
   });
 });

@@ -17,6 +17,7 @@ import type {
   OperatorDefinition,
   UnaryOperatorDefinition,
 } from "../operator-registry/index.js";
+import type { RootBinding } from "../root-bindings/index.js";
 
 export type ExpressionValueType =
   | "number"
@@ -49,6 +50,7 @@ export interface BoundIdentifierNode extends BoundExpressionNode {
   readonly kind: "BoundIdentifier";
   readonly source: IdentifierNode;
   readonly name: string;
+  readonly binding: RootBinding | null;
   readonly model: MetadataModel | null;
 }
 

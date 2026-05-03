@@ -1,6 +1,7 @@
 import type { Diagnostic } from "../contracts/index.js";
 import type { ModelCatalog } from "../model-catalog/index.js";
 import type { PreviewContext, PreviewResult } from "../preview/index.js";
+import type { RootBindingContext } from "../root-bindings/index.js";
 import type { JsonExpressionNode } from "../serializer/index.js";
 
 import { processExpression } from "./process-expression.js";
@@ -23,8 +24,9 @@ export function processExpressionResult(
   source: string,
   catalog: ModelCatalog,
   previewContext?: PreviewContext,
+  rootBindings?: RootBindingContext,
 ): ProcessedExpressionResult {
-  const result = processExpression(source, catalog, {previewContext});
+  const result = processExpression(source, catalog, {previewContext, rootBindings});
 
   return {
     source,

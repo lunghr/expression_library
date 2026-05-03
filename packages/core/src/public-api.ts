@@ -22,6 +22,10 @@ export type {
 
 export type { ModelCatalog } from "./model-catalog/index.js";
 export type {
+  RootBinding,
+  RootBindingContext,
+} from "./root-bindings/index.js";
+export type {
   SuggestionItem,
   SuggestionKind,
   SuggestionResult,
@@ -60,6 +64,10 @@ export { loadMetadataDocument, MetadataLoadError } from "./metadata/index.js";
 export { createModelCatalog, refreshModelCatalog } from "./model-catalog/index.js";
 export { parseExpression } from "./parser/index.js";
 export { evaluatePreview } from "./preview/index.js";
+export {
+  createDefaultRootBindingContext,
+  createRootBindingContext,
+} from "./root-bindings/index.js";
 export { processExpression, processExpressionResult } from "./core/index.js";
 export {
   serializeExpression,

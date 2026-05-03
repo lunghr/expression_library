@@ -1,4 +1,7 @@
-import { processExpressionResult } from "@expression-editor/core";
+import {
+  createDefaultRootBindingContext,
+  processExpressionResult,
+} from "@expression-editor/core";
 
 import { createDemoExpressionTransport } from "../expression-transport/index.js";
 import {
@@ -6,6 +9,7 @@ import {
   loadModelCatalogFromProvider,
   reloadModelCatalogFromProvider,
 } from "../metadata-provider/index.js";
+import { normalizeRootBindingSource } from "../root-bindings/index.js";
 import type { ExpressionTransportRequest } from "../expression-transport/index.js";
 import type {
   HostApplicationAdapter,
@@ -46,16 +50,22 @@ export function createHostApplicationAdapter(
       let currentCatalog = await loadModelCatalogFromProvider(
         dependencies.metadataProvider,
       );
+      let currentRootBindings = dependencies.rootBindingSource === undefined
+        ? createDefaultRootBindingContext(currentCatalog)
+        : normalizeRootBindingSource(dependencies.rootBindingSource);
 
       return {
         get catalog() {
           return currentCatalog;
         },
+        get rootBindings() {
+          return currentRootBindings;
+        },
         processExpression(source: string) {
-          return processExpressionResult(source, currentCatalog);
+          return processExpressionResult(source, currentCatalog, undefined, currentRootBindings);
         },
         async submitExpression(source: string) {
-          const processed = processExpressionResult(source, currentCatalog);
+          const processed = processExpressionResult(source, currentCatalog, undefined, currentRootBindings);
 
           if (
             processed.status !== "success"
@@ -102,6 +112,9 @@ export function createHostApplicationAdapter(
           currentCatalog = await reloadModelCatalogFromProvider(
             dependencies.metadataProvider,
           );
+          currentRootBindings = dependencies.rootBindingSource === undefined
+            ? createDefaultRootBindingContext(currentCatalog)
+            : normalizeRootBindingSource(dependencies.rootBindingSource);
 
           return currentCatalog;
         },

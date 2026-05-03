@@ -2,6 +2,7 @@ import { bindExpression } from "../binder/index.js";
 import type { ModelCatalog } from "../model-catalog/index.js";
 import { parseExpression } from "../parser/index.js";
 import { evaluatePreview } from "../preview/index.js";
+import { createDefaultRootBindingContext } from "../root-bindings/index.js";
 import {
   serializeExpression,
   serializeExpressionToJsonAst,
@@ -15,7 +16,8 @@ export function processExpression(
   options: ProcessExpressionOptions = {},
 ): ProcessExpressionResult {
   const parsed = parseExpression(source);
-  const binding = bindExpression(parsed.root, catalog);
+  const rootBindings = options.rootBindings ?? createDefaultRootBindingContext(catalog);
+  const binding = bindExpression(parsed.root, catalog, rootBindings);
   const serializedJson = parsed.root === null
     ? null
     : serializeExpressionToJsonAst(parsed.root);

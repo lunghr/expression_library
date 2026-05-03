@@ -15,6 +15,9 @@ import {
   getBinaryOperatorDefinitionBySymbol,
   getUnaryOperatorDefinitionBySymbol,
 } from "../operator-registry/index.js";
+import { createDefaultRootBindingContext } from "../root-bindings/index.js";
+import type { RootBindingContext } from "../root-bindings/index.js";
+import { getRootBinding } from "../root-bindings/index.js";
 
 import type {
   AnyBoundExpressionNode,
@@ -34,6 +37,7 @@ import { getBinaryOperatorTypeRule, getUnaryOperatorTypeRule } from "./type-rule
 export function bindExpression(
   root: AnyExpressionNode | null,
   catalog: ModelCatalog,
+  rootBindings: RootBindingContext = createDefaultRootBindingContext(catalog),
 ): BindingResult {
   if (root === null) {
     return {
@@ -43,7 +47,7 @@ export function bindExpression(
   }
 
   const diagnostics: Diagnostic[] = [];
-  const boundRoot = bindNode(root, catalog, diagnostics);
+  const boundRoot = bindNode(root, catalog, rootBindings, diagnostics);
 
   return {
     root: boundRoot,
@@ -54,6 +58,7 @@ export function bindExpression(
 function bindNode(
   node: AnyExpressionNode,
   catalog: ModelCatalog,
+  rootBindings: RootBindingContext,
   diagnostics: Diagnostic[],
 ): AnyBoundExpressionNode {
   switch (node.kind) {
@@ -64,13 +69,13 @@ function bindNode(
     case "BooleanLiteral":
       return bindBooleanLiteral(node);
     case "Identifier":
-      return bindIdentifier(node, catalog, diagnostics);
+      return bindIdentifier(node, catalog, rootBindings, diagnostics);
     case "MemberExpression":
-      return bindMemberExpression(node, catalog, diagnostics);
+      return bindMemberExpression(node, catalog, rootBindings, diagnostics);
     case "UnaryExpression":
-      return bindUnaryExpression(node, catalog, diagnostics);
+      return bindUnaryExpression(node, catalog, rootBindings, diagnostics);
     case "BinaryExpression":
-      return bindBinaryExpression(node, catalog, diagnostics);
+      return bindBinaryExpression(node, catalog, rootBindings, diagnostics);
   }
 }
 
@@ -89,15 +94,27 @@ function bindNumberLiteral(
 function bindIdentifier(
   node: IdentifierNode,
   catalog: ModelCatalog,
+  rootBindings: RootBindingContext,
   diagnostics: Diagnostic[],
 ): BoundIdentifierNode {
-  const model = catalog.getModel(node.name);
+  const binding = getRootBinding(rootBindings, node.name);
+  const model = binding === null
+    ? null
+    : catalog.getModel(binding.modelName);
 
-  if (model === null) {
+  if (binding === null) {
     diagnostics.push(
       createDiagnostic(
         "SEM001",
-        `Unknown identifier "${node.name}".`,
+        `Unknown root binding "${node.name}".`,
+        node.span,
+      ),
+    );
+  } else if (model === null) {
+    diagnostics.push(
+      createDiagnostic(
+        "SEM009",
+        `Root binding "${node.name}" points to an unknown model "${binding.modelName}".`,
         node.span,
       ),
     );
@@ -108,6 +125,7 @@ function bindIdentifier(
     source: node,
     span: node.span,
     name: node.name,
+    binding,
     model,
     type: model === null ? "unknown" : "object",
   };
@@ -116,9 +134,10 @@ function bindIdentifier(
 function bindMemberExpression(
   node: MemberExpressionNode,
   catalog: ModelCatalog,
+  rootBindings: RootBindingContext,
   diagnostics: Diagnostic[],
 ): BoundMemberExpressionNode {
-  const object = bindReferenceNode(node.object, catalog, diagnostics);
+  const object = bindReferenceNode(node.object, catalog, rootBindings, diagnostics);
   const memberName = node.member.name;
   const fieldContainer = getMemberFieldContainer(object);
 
@@ -153,7 +172,9 @@ function bindMemberExpression(
   }
 
   const field = object.kind === "BoundIdentifier"
-    ? catalog.getField(object.name, memberName)
+    ? object.binding === null
+      ? null
+      : catalog.getField(object.binding.modelName, memberName)
     : object.field === null
       ? null
       : catalog.getChildField(object.field, memberName);
@@ -181,10 +202,11 @@ function bindMemberExpression(
 function bindBinaryExpression(
   node: BinaryExpressionNode,
   catalog: ModelCatalog,
+  rootBindings: RootBindingContext,
   diagnostics: Diagnostic[],
 ): BoundBinaryExpressionNode {
-  const left = bindNode(node.left, catalog, diagnostics);
-  const right = bindNode(node.right, catalog, diagnostics);
+  const left = bindNode(node.left, catalog, rootBindings, diagnostics);
+  const right = bindNode(node.right, catalog, rootBindings, diagnostics);
   const operatorDefinition = getBinaryOperatorDefinitionBySymbol(node.operator);
 
   if (operatorDefinition === null) {
@@ -218,9 +240,10 @@ function bindBinaryExpression(
 function bindUnaryExpression(
   node: UnaryExpressionNode,
   catalog: ModelCatalog,
+  rootBindings: RootBindingContext,
   diagnostics: Diagnostic[],
 ): BoundUnaryExpressionNode {
-  const operand = bindNode(node.operand, catalog, diagnostics);
+  const operand = bindNode(node.operand, catalog, rootBindings, diagnostics);
   const operatorDefinition = getUnaryOperatorDefinitionBySymbol(node.operator);
 
   if (operatorDefinition === null) {
@@ -277,13 +300,14 @@ function bindBooleanLiteral(
 function bindReferenceNode(
   node: IdentifierNode | MemberExpressionNode,
   catalog: ModelCatalog,
+  rootBindings: RootBindingContext,
   diagnostics: Diagnostic[],
 ): BoundReferenceNode {
   if (node.kind === "Identifier") {
-    return bindIdentifier(node, catalog, diagnostics);
+    return bindIdentifier(node, catalog, rootBindings, diagnostics);
   }
 
-  return bindMemberExpression(node, catalog, diagnostics);
+  return bindMemberExpression(node, catalog, rootBindings, diagnostics);
 }
 
 function getMemberFieldContainer(
