@@ -36,6 +36,18 @@ export function tokenize(source: string): TokenizeResult {
         index += 1;
       }
 
+      if (
+        source[index] === "."
+        && index + 1 < source.length
+        && isDigit(source[index + 1])
+      ) {
+        index += 1;
+
+        while (index < source.length && isDigit(source[index])) {
+          index += 1;
+        }
+      }
+
       tokens.push({
         kind: "Number",
         lexeme: source.slice(start, index),

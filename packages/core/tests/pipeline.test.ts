@@ -38,6 +38,16 @@ describe("core expression pipeline", () => {
     expect(result.root ? serializeExpression(result.root) : undefined).toBe("1");
   });
 
+  it('parses and serializes "1.5"', () => {
+    const result = parseExpression("1.5");
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.root?.kind).toBe("NumberLiteral");
+    expect(result.root && "value" in result.root ? result.root.value : undefined).toBe(1.5);
+    expect(result.root && "raw" in result.root ? result.root.raw : undefined).toBe("1.5");
+    expect(result.root ? serializeExpression(result.root) : undefined).toBe("1.5");
+  });
+
   it('parses and serializes "1 + 2"', () => {
     const result = parseExpression("1 + 2");
 
@@ -102,6 +112,36 @@ describe("core expression pipeline", () => {
       "Dot",
       "Identifier",
       "End",
+    ]);
+  });
+
+  it("tokenizes decimal literals as one number token", () => {
+    const result = tokenize("123.45 + 0.25");
+
+    expect(result.tokens.map((token) => ({
+      kind: token.kind,
+      lexeme: token.lexeme,
+    }))).toEqual([
+      {kind: "Number", lexeme: "123.45"},
+      {kind: "Whitespace", lexeme: " "},
+      {kind: "Plus", lexeme: "+"},
+      {kind: "Whitespace", lexeme: " "},
+      {kind: "Number", lexeme: "0.25"},
+      {kind: "End", lexeme: ""},
+    ]);
+  });
+
+  it("keeps member access tokenization unchanged around dots", () => {
+    const result = tokenize("User.age");
+
+    expect(result.tokens.map((token) => ({
+      kind: token.kind,
+      lexeme: token.lexeme,
+    }))).toEqual([
+      {kind: "Identifier", lexeme: "User"},
+      {kind: "Dot", lexeme: "."},
+      {kind: "Identifier", lexeme: "age"},
+      {kind: "End", lexeme: ""},
     ]);
   });
 
@@ -270,6 +310,106 @@ describe("core expression pipeline", () => {
     expect(result.root ? serializeExpression(result.root) : undefined).toBe("order.total + 5 > user.age");
   });
 
+  it("parses member access with decimal literals unchanged", () => {
+    const result = parseExpression("User.age > 18.5");
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.root?.kind).toBe("BinaryExpression");
+    expect(result.root?.kind === "BinaryExpression" ? result.root.right.kind : undefined).toBe("NumberLiteral");
+    expect(
+      result.root?.kind === "BinaryExpression" && result.root.right.kind === "NumberLiteral"
+        ? result.root.right.raw
+        : undefined,
+    ).toBe("18.5");
+    expect(result.root ? serializeExpression(result.root) : undefined).toBe("User.age > 18.5");
+  });
+
+  it("parses unary decimal literals through existing unary syntax", () => {
+    const result = parseExpression("-1.5");
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.root?.kind).toBe("UnaryExpression");
+    expect(result.root?.kind === "UnaryExpression" ? result.root.operand.kind : undefined).toBe("NumberLiteral");
+    expect(
+      result.root?.kind === "UnaryExpression" && result.root.operand.kind === "NumberLiteral"
+        ? result.root.operand.raw
+        : undefined,
+    ).toBe("1.5");
+    expect(result.root ? serializeExpression(result.root) : undefined).toBe("-1.5");
+  });
+
+  it("parses grouped decimal literals next to operators and parentheses", () => {
+    const result = parseExpression("(1.5 + 2.25)");
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.root?.kind).toBe("BinaryExpression");
+    expect(result.root ? serializeExpression(result.root) : undefined).toBe("1.5 + 2.25");
+  });
+
+  it('rejects ".5" as an unexpected dot at expression start', () => {
+    const result = parseExpression(".5");
+
+    expect(result.root).toBeNull();
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR005"]);
+  });
+
+  it('rejects "1." as invalid dot usage after a number literal', () => {
+    const result = parseExpression("1.");
+
+    expect(result.root?.kind).toBe("NumberLiteral");
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR007"]);
+    expect(result.root && "raw" in result.root ? result.root.raw : undefined).toBe("1");
+  });
+
+  it('rejects "1..2" with stable recovery diagnostics', () => {
+    const result = parseExpression("1..2");
+
+    expect(result.root?.kind).toBe("NumberLiteral");
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
+      "PAR007",
+      "PAR007",
+      "PAR003",
+    ]);
+  });
+
+  it('rejects "1.2.3" after the valid decimal literal', () => {
+    const result = parseExpression("1.2.3");
+
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
+      "PAR007",
+      "PAR003",
+    ]);
+    expect(result.root?.kind).toBe("NumberLiteral");
+    expect(result.root && "raw" in result.root ? result.root.raw : undefined).toBe("1.2");
+  });
+
+  it('rejects "1.age" as invalid member access on a number literal', () => {
+    const result = parseExpression("1.age");
+
+    expect(result.root?.kind).toBe("NumberLiteral");
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual(["PAR007"]);
+  });
+
+  it('rejects "User.5" as missing identifier after member access dot', () => {
+    const result = parseExpression("User.5");
+
+    expect(result.root?.kind).toBe("Identifier");
+    expect(result.diagnostics.map((diagnostic) => diagnostic.code)).toEqual([
+      "PAR006",
+      "PAR003",
+    ]);
+  });
+
+  it("keeps leading zero decimals as valid number literals", () => {
+    const result = parseExpression("01.20");
+
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.root?.kind).toBe("NumberLiteral");
+    expect(result.root && "value" in result.root ? result.root.value : undefined).toBe(1.2);
+    expect(result.root && "raw" in result.root ? result.root.raw : undefined).toBe("01.20");
+    expect(result.root ? serializeExpression(result.root) : undefined).toBe("01.20");
+  });
+
   it("reports an unexpected dot at expression start", () => {
     const result = parseExpression(".age");
 
@@ -298,6 +438,24 @@ describe("core expression pipeline", () => {
     expect(result.boundRoot?.kind).toBe("BoundBinaryExpression");
     expect(result.diagnostics).toHaveLength(0);
     expect(result.serialized).toBe("User.age > 18 && User.active");
+  });
+
+  it("processes decimal literals through the unified core pipeline", () => {
+    const result = processExpression("User.age > 18.5", createTestCatalog());
+
+    expect(result.root?.kind).toBe("BinaryExpression");
+    expect(result.boundRoot?.kind).toBe("BoundBinaryExpression");
+    expect(result.diagnostics).toHaveLength(0);
+    expect(result.serialized).toBe("User.age > 18.5");
+    expect(result.serializedJson).toMatchObject({
+      type: "binary",
+      operator: ">",
+      right: {
+        type: "number",
+        value: 18.5,
+        raw: "18.5",
+      },
+    });
   });
 
   it("returns canonical serialization even when semantic diagnostics exist", () => {

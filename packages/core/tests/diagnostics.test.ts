@@ -54,6 +54,25 @@ describe("diagnostics payload", () => {
     expect(result.diagnostics.every((diagnostic) => diagnostic.severity === "error")).toBe(true);
   });
 
+  it("keeps syntax severity and category for invalid decimal forms", () => {
+    const leadingDot = parseExpression(".5");
+    const trailingDot = parseExpression("1.");
+
+    expect(leadingDot.diagnostics[0]).toMatchObject({
+      code: "PAR005",
+      severity: "error",
+      category: "syntax",
+      span: {start: 0, end: 1},
+    });
+
+    expect(trailingDot.diagnostics[0]).toMatchObject({
+      code: "PAR007",
+      severity: "error",
+      category: "syntax",
+      span: {start: 1, end: 2},
+    });
+  });
+
   it("marks semantic diagnostics with severity and category", () => {
     const result = processExpression("User.missing + 1", createTestCatalog());
 

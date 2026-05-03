@@ -43,6 +43,15 @@ describe("serialization", () => {
         },
       },
       {
+        source: "1.5",
+        expected: {
+          type: "number",
+          value: 1.5,
+          raw: "1.5",
+          span: {start: 0, end: 3},
+        },
+      },
+      {
         source: '"A"',
         expected: {
           type: "string",
@@ -150,6 +159,18 @@ describe("serialization", () => {
         type: "number",
         value: 18,
       },
+    });
+  });
+
+  it("keeps decimal literal raw text and value in JSON AST", () => {
+    const parsed = parseExpression("18.5");
+
+    expect(parsed.diagnostics).toHaveLength(0);
+    expect(parsed.root === null ? null : serializeExpressionToJsonAst(parsed.root)).toEqual({
+      type: "number",
+      value: 18.5,
+      raw: "18.5",
+      span: {start: 0, end: 4},
     });
   });
 

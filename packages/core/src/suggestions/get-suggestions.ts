@@ -1,16 +1,9 @@
 import type { Token } from "../lexer/index.js";
-import {
-  getSignificantTokens,
-  tokenize,
-} from "../lexer/index.js";
+import { getSignificantTokens, tokenize, } from "../lexer/index.js";
 import type { ModelCatalog } from "../model-catalog/index.js";
 import { listBinaryOperatorDefinitions } from "../operator-registry/index.js";
 import { parseExpression } from "../parser/index.js";
-import {
-  createDefaultRootBindingContext,
-  getRootBinding,
-  type RootBindingContext,
-} from "../root-bindings/index.js";
+import { createDefaultRootBindingContext, getRootBinding, type RootBindingContext, } from "../root-bindings/index.js";
 
 import type { SuggestionItem, SuggestionResult } from "./contracts.js";
 

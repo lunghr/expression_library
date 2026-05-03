@@ -17,6 +17,31 @@ describe("parser layout and spans", () => {
     ]);
   });
 
+  it("keeps token spans for decimal literals", () => {
+    const result = tokenize("18.5");
+
+    expect(result.tokens.map((token) => ({
+      kind: token.kind,
+      span: token.span,
+    }))).toEqual([
+      {kind: "Number", span: {start: 0, end: 4}},
+      {kind: "End", span: {start: 4, end: 4}},
+    ]);
+  });
+
+  it("keeps separate token spans for invalid trailing dot forms", () => {
+    const result = tokenize("1.");
+
+    expect(result.tokens.map((token) => ({
+      kind: token.kind,
+      span: token.span,
+    }))).toEqual([
+      {kind: "Number", span: {start: 0, end: 1}},
+      {kind: "Dot", span: {start: 1, end: 2}},
+      {kind: "End", span: {start: 2, end: 2}},
+    ]);
+  });
+
   it("keeps root and operator spans for binary expressions", () => {
     const result = parseExpression("user.age + 5");
 
