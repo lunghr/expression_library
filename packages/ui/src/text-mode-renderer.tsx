@@ -6,6 +6,9 @@ import { useEffect, useRef } from "react";
 
 const editorHostStyle = {
   border: "1px solid #d0d0d0",
+  borderRadius: "8px",
+  backgroundColor: "#ffffff",
+  overflow: "hidden",
 } satisfies CSSProperties;
 
 export interface TextModeRendererProps {
@@ -18,6 +21,7 @@ export interface TextModeRendererProps {
 export function TextModeRenderer({text, cursor, onTextChange, onCursorChange}: TextModeRendererProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
+  const isSyncingRef = useRef(false);
   const onTextChangeRef = useRef(onTextChange);
   const onCursorChangeRef = useRef(onCursorChange);
 
@@ -37,6 +41,10 @@ export function TextModeRenderer({text, cursor, onTextChange, onCursorChange}: T
     }
 
     const updateListener = EditorView.updateListener.of((update) => {
+      if (isSyncingRef.current) {
+        return;
+      }
+
       if (!update.docChanged && !update.selectionSet) {
         return;
       }
@@ -57,24 +65,48 @@ export function TextModeRenderer({text, cursor, onTextChange, onCursorChange}: T
         extensions: [
           basicSetup,
           keymap.of([]),
-          EditorView.lineWrapping,
           updateListener,
           EditorView.theme({
             "&": {
-              minHeight: "140px",
               fontSize: "14px",
+              backgroundColor: "transparent",
             },
             ".cm-content": {
-              fontFamily: "monospace",
-              padding: "8px",
+              fontFamily: "inherit",
+              padding: "10px 12px",
+              lineHeight: "1.4",
+              whiteSpace: "pre",
             },
             ".cm-scroller": {
-              fontFamily: "monospace",
+              fontFamily: "inherit",
+              overflowX: "auto",
+              overflowY: "hidden",
             },
-            ".cm-focused": {
+            ".cm-editor": {
+              backgroundColor: "transparent",
+            },
+            ".cm-gutters": {
+              display: "none",
+            },
+            ".cm-activeLine": {
+              backgroundColor: "transparent",
+            },
+            ".cm-activeLineGutter": {
+              backgroundColor: "transparent",
+            },
+            ".cm-selectionBackground, &.cm-focused .cm-selectionBackground, ::selection": {
+              backgroundColor: "#cfe3ff",
+            },
+            "&.cm-focused": {
               outline: "none",
             },
-          }),
+            "&.cm-focused .cm-scroller": {
+              boxShadow: "inset 0 0 0 1px #2563eb",
+            },
+            ".cm-panels": {
+              display: "none",
+            },
+          }, {dark: false}),
         ],
       }),
       parent: host,
@@ -100,13 +132,23 @@ export function TextModeRenderer({text, cursor, onTextChange, onCursorChange}: T
     }
 
     const selectionAnchor = Math.max(0, Math.min(cursor, text.length));
+    const changes = currentText === text
+      ? undefined
+      : {from: 0, to: currentText.length, insert: text};
+    const selection = currentCursor === selectionAnchor
+      ? undefined
+      : {anchor: selectionAnchor};
 
+    if (changes === undefined && selection === undefined) {
+      return;
+    }
+
+    isSyncingRef.current = true;
     view.dispatch({
-      changes: currentText === text
-        ? undefined
-        : {from: 0, to: currentText.length, insert: text},
-      selection: {anchor: selectionAnchor},
+      changes,
+      selection,
     });
+    isSyncingRef.current = false;
   }, [cursor, text]);
 
   return <div data-testid="expression-editor" ref={hostRef} style={editorHostStyle}/>;
