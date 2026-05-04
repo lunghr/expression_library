@@ -1,4 +1,7 @@
-import type { ProcessedExpressionResult } from "@expression-editor/core";
+import type {
+  PreviewResult,
+  ProcessedExpressionResult,
+} from "@expression-editor/core";
 import type { CSSProperties } from "react";
 
 import type {
@@ -12,21 +15,31 @@ const panelStyle = {
 } satisfies CSSProperties;
 
 export interface ResultPanelProps {
-  readonly result: ProcessedExpressionResult;
+  readonly result: ProcessedExpressionResult | null;
+  readonly preview?: PreviewResult | null;
   readonly submission?: SubmissionResultView | null;
 }
 
-export function ResultPanel({result, submission}: ResultPanelProps) {
+export function ResultPanel({
+  result,
+  preview = null,
+  submission,
+}: ResultPanelProps) {
   return (
     <>
       <div data-testid="processing-state" style={panelStyle}>
         <div>Processing State</div>
-        <div>{getStateLabel(result.status)}</div>
+        <div>{result === null ? "Metadata Not Ready" : getStateLabel(result.status)}</div>
       </div>
 
       <div data-testid="canonical-output" style={panelStyle}>
         <div>Canonical Output</div>
-        <div>{result.expression ?? "(none)"}</div>
+        <div>{result?.expression ?? "(none)"}</div>
+      </div>
+
+      <div style={panelStyle}>
+        <div>Preview</div>
+        <div>{getPreviewLabel(preview)}</div>
       </div>
 
       {submission === undefined ? null : (
@@ -77,4 +90,19 @@ function getExecutionLabel(
   }
 
   return `Execution error: ${executionResult.message}`;
+}
+
+function getPreviewLabel(preview: PreviewResult | null): string {
+  if (preview === null) {
+    return "Not available.";
+  }
+
+  switch (preview.status) {
+    case "known":
+      return JSON.stringify(preview.value);
+    case "unknown":
+      return "Unknown";
+    case "error":
+      return `Error: ${preview.message}`;
+  }
 }

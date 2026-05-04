@@ -25,13 +25,13 @@ const panelStyle = {
 } satisfies CSSProperties;
 
 export interface ExpressionEditorProps {
-  readonly catalog: ModelCatalog;
+  readonly catalog?: ModelCatalog | null;
   readonly value?: string;
   readonly initialValue?: string;
   readonly onChange?: (value: string) => void;
   readonly rootBindings?: RootBindingContext;
   readonly previewContext?: PreviewContext;
-  readonly onAnalysisChange?: (result: ProcessedExpressionResult) => void;
+  readonly onAnalysisChange?: (result: ProcessedExpressionResult | null) => void;
 }
 
 export function ExpressionEditor({
@@ -69,9 +69,12 @@ export function ExpressionEditor({
           }}
         />
       </div>
+      {catalog === undefined || catalog === null ? (
+        <div style={panelStyle}>Metadata is not ready.</div>
+      ) : null}
       <SuggestionPanel suggestions={snapshot.suggestions} />
-      <ResultPanel result={snapshot.result} />
-      <DiagnosticsPanel diagnostics={snapshot.result.diagnostics} />
+      <ResultPanel preview={snapshot.preview} result={snapshot.result} />
+      <DiagnosticsPanel diagnostics={snapshot.result?.diagnostics ?? []} />
     </div>
   );
 }

@@ -1,6 +1,7 @@
 import {
   getSuggestions,
   processExpressionResult,
+  type PreviewResult,
   type ModelCatalog,
   type PreviewContext,
   type ProcessedExpressionResult,
@@ -12,8 +13,9 @@ import { useEffect, useMemo, useState } from "react";
 export interface EditorStateSnapshot {
   readonly text: string;
   readonly cursor: number;
-  readonly result: ProcessedExpressionResult;
+  readonly result: ProcessedExpressionResult | null;
   readonly suggestions: SuggestionResult;
+  readonly preview: PreviewResult | null;
 }
 
 export interface EditorStateController {
@@ -24,14 +26,18 @@ export interface EditorStateController {
 }
 
 export interface UseEditorStateOptions {
-  readonly catalog: ModelCatalog;
+  readonly catalog?: ModelCatalog | null;
   readonly initialText?: string;
   readonly value?: string;
   readonly onValueChange?: (value: string) => void;
   readonly rootBindings?: RootBindingContext;
   readonly previewContext?: PreviewContext;
-  readonly onAnalysisChange?: (result: ProcessedExpressionResult) => void;
+  readonly onAnalysisChange?: (result: ProcessedExpressionResult | null) => void;
 }
+
+const emptySuggestions: SuggestionResult = {
+  items: [],
+};
 
 export function useEditorState({
   catalog,
@@ -55,11 +61,23 @@ export function useEditorState({
   }, [value]);
 
   const result = useMemo(
-    () => processExpressionResult(text, catalog, previewContext, rootBindings),
+    () => {
+      if (catalog === undefined || catalog === null) {
+        return null;
+      }
+
+      return processExpressionResult(text, catalog, previewContext, rootBindings);
+    },
     [catalog, previewContext, rootBindings, text],
   );
   const suggestions = useMemo(
-    () => getSuggestions(text, cursor, catalog, rootBindings),
+    () => {
+      if (catalog === undefined || catalog === null) {
+        return emptySuggestions;
+      }
+
+      return getSuggestions(text, cursor, catalog, rootBindings);
+    },
     [catalog, cursor, rootBindings, text],
   );
 
@@ -94,6 +112,7 @@ export function useEditorState({
       cursor,
       result,
       suggestions,
+      preview: result?.preview ?? null,
     },
     setText,
     setCursor,
