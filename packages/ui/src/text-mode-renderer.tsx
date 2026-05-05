@@ -16,14 +16,34 @@ export interface TextModeRendererProps {
   readonly cursor: number;
   readonly onTextChange: (value: string, cursor: number) => void;
   readonly onCursorChange: (cursor: number) => void;
+  readonly isSuggestionOpen?: boolean;
+  readonly onSuggestionPrevious?: () => void;
+  readonly onSuggestionNext?: () => void;
+  readonly onSuggestionClose?: () => void;
+  readonly onSuggestionAccept?: () => void;
 }
 
-export function TextModeRenderer({text, cursor, onTextChange, onCursorChange}: TextModeRendererProps) {
+export function TextModeRenderer({
+  text,
+  cursor,
+  onTextChange,
+  onCursorChange,
+  isSuggestionOpen = false,
+  onSuggestionPrevious,
+  onSuggestionNext,
+  onSuggestionClose,
+  onSuggestionAccept,
+}: TextModeRendererProps) {
   const hostRef = useRef<HTMLDivElement | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const isSyncingRef = useRef(false);
   const onTextChangeRef = useRef(onTextChange);
   const onCursorChangeRef = useRef(onCursorChange);
+  const isSuggestionOpenRef = useRef(isSuggestionOpen);
+  const onSuggestionPreviousRef = useRef(onSuggestionPrevious);
+  const onSuggestionNextRef = useRef(onSuggestionNext);
+  const onSuggestionCloseRef = useRef(onSuggestionClose);
+  const onSuggestionAcceptRef = useRef(onSuggestionAccept);
 
   useEffect(() => {
     onTextChangeRef.current = onTextChange;
@@ -32,6 +52,26 @@ export function TextModeRenderer({text, cursor, onTextChange, onCursorChange}: T
   useEffect(() => {
     onCursorChangeRef.current = onCursorChange;
   }, [onCursorChange]);
+
+  useEffect(() => {
+    isSuggestionOpenRef.current = isSuggestionOpen;
+  }, [isSuggestionOpen]);
+
+  useEffect(() => {
+    onSuggestionPreviousRef.current = onSuggestionPrevious;
+  }, [onSuggestionPrevious]);
+
+  useEffect(() => {
+    onSuggestionNextRef.current = onSuggestionNext;
+  }, [onSuggestionNext]);
+
+  useEffect(() => {
+    onSuggestionCloseRef.current = onSuggestionClose;
+  }, [onSuggestionClose]);
+
+  useEffect(() => {
+    onSuggestionAcceptRef.current = onSuggestionAccept;
+  }, [onSuggestionAccept]);
 
   useEffect(() => {
     const host = hostRef.current;
@@ -64,7 +104,52 @@ export function TextModeRenderer({text, cursor, onTextChange, onCursorChange}: T
         doc: text,
         extensions: [
           basicSetup,
-          keymap.of([]),
+          keymap.of([
+            {
+              key: "ArrowUp",
+              run: () => {
+                if (!isSuggestionOpenRef.current) {
+                  return false;
+                }
+
+                onSuggestionPreviousRef.current?.();
+                return true;
+              },
+            },
+            {
+              key: "ArrowDown",
+              run: () => {
+                if (!isSuggestionOpenRef.current) {
+                  return false;
+                }
+
+                onSuggestionNextRef.current?.();
+                return true;
+              },
+            },
+            {
+              key: "Escape",
+              run: () => {
+                if (!isSuggestionOpenRef.current) {
+                  return false;
+                }
+
+                onSuggestionCloseRef.current?.();
+                return true;
+              },
+            },
+            {
+              key: "Tab",
+              run: () => {
+                if (!isSuggestionOpenRef.current) {
+                  return false;
+                }
+
+                onSuggestionAcceptRef.current?.();
+                return true;
+              },
+            },
+          ]),
           updateListener,
           EditorView.theme({
             "&": {

@@ -1,8 +1,6 @@
 import type { Token } from "../lexer/index.js";
 import { getSignificantTokens, tokenize, } from "../lexer/index.js";
 import type { ModelCatalog } from "../model-catalog/index.js";
-import { listBinaryOperatorDefinitions } from "../operator-registry/index.js";
-import { parseExpression } from "../parser/index.js";
 import { createDefaultRootBindingContext, getRootBinding, type RootBindingContext, } from "../root-bindings/index.js";
 
 import type { SuggestionItem, SuggestionResult } from "./contracts.js";
@@ -49,17 +47,6 @@ export function getSuggestions(
     };
   }
 
-  if (shouldSuggestOperators(beforeCursor)) {
-    return {
-      items: listBinaryOperatorDefinitions().map((operator) => ({
-        kind: "operator" as const,
-        label: operator.symbol,
-        insertText: operator.symbol,
-        detail: operator.category,
-      })),
-    };
-  }
-
   return {
     items: [],
   };
@@ -86,7 +73,10 @@ function getFieldSuggestions(
     return model === null
       ? []
       : model.fields
-        .filter((field) => field.name.startsWith(prefix))
+        .filter((field) =>
+          field.name.startsWith(prefix)
+          && field.name !== prefix
+        )
         .map((field) => ({
           kind: "field",
           label: field.name,
@@ -103,7 +93,10 @@ function getFieldSuggestions(
   }
 
   return field.fields
-    .filter((childField) => childField.name.startsWith(prefix))
+    .filter((childField) =>
+      childField.name.startsWith(prefix)
+      && childField.name !== prefix
+    )
     .map((childField) => ({
       kind: "field",
       label: childField.name,
@@ -121,7 +114,10 @@ function getRootSuggestions(
   rootBindings: RootBindingContext,
 ): SuggestionItem[] {
   return rootBindings.bindings
-    .filter((binding) => binding.name.startsWith(prefix))
+    .filter((binding) =>
+      binding.name.startsWith(prefix)
+      && binding.name !== prefix
+    )
     .map((binding) => {
       const model = catalog.getModel(binding.modelName);
 
@@ -202,7 +198,7 @@ function readRootPrefixContext(
   cursor: number,
 ): { prefix: string; replaceStart: number } | null {
   if (tokens.length === 0) {
-    return {prefix: "", replaceStart: cursor};
+    return null;
   }
 
   const lastToken = tokens[tokens.length - 1];
@@ -224,10 +220,7 @@ function readRootPrefixContext(
   }
 
   if (isExpressionStartBoundary(lastToken)) {
-    return {
-      prefix: "",
-      replaceStart: cursor,
-    };
+    return null;
   }
 
   return null;
@@ -253,20 +246,4 @@ function isExpressionStartBoundary(token: Token | null): boolean {
     || token.kind === "AmpersandAmpersand"
     || token.kind === "PipePipe"
     || token.kind === "Bang";
-}
-
-function shouldSuggestOperators(beforeCursor: string): boolean {
-  const trimmed = beforeCursor.trimEnd();
-
-  if (trimmed.length === 0) {
-    return false;
-  }
-
-  const parsed = parseExpression(trimmed);
-
-  if (parsed.root === null || parsed.diagnostics.some((diagnostic) => diagnostic.category === "syntax")) {
-    return false;
-  }
-
-  return true;
 }

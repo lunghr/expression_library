@@ -98,6 +98,12 @@ describe("suggestions", () => {
     expect(result.items[0]?.replaceSpan).toEqual({start: 6, end: 7});
   });
 
+  it("does not suggest a field when the field name is already complete", () => {
+    const result = getSuggestions("buyer.active", 12, createTestCatalog(), createRootBindings());
+
+    expect(result.items).toEqual([]);
+  });
+
   it("suggests nested fields after object member access", () => {
     const result = getSuggestions("seller.address.", 15, createTestCatalog(), createRootBindings());
 
@@ -110,30 +116,6 @@ describe("suggestions", () => {
         replaceSpan: {start: 15, end: 15},
       },
     ]);
-  });
-
-  it("suggests operators after a complete expression fragment", () => {
-    const result = getSuggestions("User.age ", 9, createTestCatalog());
-
-    expect(result.items.map((item) => item.label)).toEqual([
-      "+",
-      "-",
-      "*",
-      "/",
-      "==",
-      "!=",
-      "<",
-      "<=",
-      ">",
-      ">=",
-      "&&",
-      "||",
-    ]);
-    expect(result.items[0]).toMatchObject({
-      kind: "operator",
-      insertText: "+",
-      detail: "arithmetic",
-    });
   });
 
   it("returns no suggestions for unsupported member contexts", () => {
@@ -182,7 +164,25 @@ describe("suggestions", () => {
     expect(result.items).toEqual([]);
   });
 
-  it("suggests root names after an open group", () => {
+  it("returns no root suggestions for empty input", () => {
+    const result = getSuggestions("", 0, createTestCatalog());
+
+    expect(result.items).toEqual([]);
+  });
+
+  it("does not suggest a root name when it is already complete", () => {
+    const result = getSuggestions("buyer", 5, createTestCatalog(), createRootBindings());
+
+    expect(result.items).toEqual([]);
+  });
+
+  it("returns no root suggestions after an open group without a prefix", () => {
+    const result = getSuggestions("(", 1, createTestCatalog());
+
+    expect(result.items).toEqual([]);
+  });
+
+  it("suggests root names after an open group when a prefix exists", () => {
     const result = getSuggestions("(Or", 3, createTestCatalog());
 
     expect(result.items).toEqual([

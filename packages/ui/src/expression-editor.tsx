@@ -24,6 +24,10 @@ const panelStyle = {
   padding: "12px",
 } satisfies CSSProperties;
 
+const editorFrameStyle = {
+  position: "relative",
+} satisfies CSSProperties;
+
 export interface ExpressionEditorProps {
   readonly catalog?: ModelCatalog | null;
   readonly value?: string;
@@ -56,23 +60,45 @@ export function ExpressionEditor({
 
   return (
     <div style={editorStyle}>
-      <div style={panelStyle}>
+      <div style={editorFrameStyle}>
+        <div style={panelStyle}>
         <div>Expression</div>
         <TextModeRenderer
           text={snapshot.text}
           cursor={snapshot.cursor}
+          isSuggestionOpen={snapshot.isSuggestionOpen}
           onTextChange={(nextText, nextCursor) => {
             editorState.updateText(nextText, nextCursor);
           }}
           onCursorChange={(nextCursor) => {
             editorState.setCursor(nextCursor);
           }}
+          onSuggestionPrevious={() => {
+            editorState.moveActiveSuggestion(-1);
+          }}
+          onSuggestionNext={() => {
+            editorState.moveActiveSuggestion(1);
+          }}
+          onSuggestionClose={() => {
+            editorState.closeSuggestions();
+          }}
+          onSuggestionAccept={() => {
+            editorState.applySuggestion();
+          }}
+        />
+        </div>
+        <SuggestionPanel
+          activeIndex={snapshot.activeSuggestionIndex}
+          isOpen={snapshot.isSuggestionOpen}
+          onSelect={(index) => {
+            editorState.applySuggestion(index);
+          }}
+          suggestions={snapshot.suggestions}
         />
       </div>
       {catalog === undefined || catalog === null ? (
         <div style={panelStyle}>Metadata is not ready.</div>
       ) : null}
-      <SuggestionPanel suggestions={snapshot.suggestions} />
       <ResultPanel preview={snapshot.preview} result={snapshot.result} />
       <DiagnosticsPanel diagnostics={snapshot.result?.diagnostics ?? []} />
     </div>

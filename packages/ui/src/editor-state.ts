@@ -1,6 +1,7 @@
 import {
   getSuggestions,
   processExpressionResult,
+  type SuggestionItem,
   type PreviewResult,
   type ModelCatalog,
   type PreviewContext,
@@ -16,6 +17,8 @@ export interface EditorStateSnapshot {
   readonly result: ProcessedExpressionResult | null;
   readonly suggestions: SuggestionResult;
   readonly preview: PreviewResult | null;
+  readonly isSuggestionOpen: boolean;
+  readonly activeSuggestionIndex: number;
 }
 
 export interface EditorStateController {
@@ -23,6 +26,9 @@ export interface EditorStateController {
   setText(nextText: string): void;
   setCursor(nextCursor: number): void;
   updateText(nextText: string, nextCursor?: number): void;
+  moveActiveSuggestion(delta: number): void;
+  closeSuggestions(): void;
+  applySuggestion(index?: number): void;
 }
 
 export interface UseEditorStateOptions {
@@ -50,6 +56,8 @@ export function useEditorState({
 }: UseEditorStateOptions): EditorStateController {
   const [text, setTextState] = useState(value ?? initialText);
   const [cursor, setCursorState] = useState((value ?? initialText).length);
+  const [isSuggestionOpen, setIsSuggestionOpen] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
 
   useEffect(() => {
     if (value === undefined) {
@@ -85,16 +93,31 @@ export function useEditorState({
     onAnalysisChange?.(result);
   }, [onAnalysisChange, result]);
 
+  useEffect(() => {
+    if (suggestions.items.length === 0) {
+      setIsSuggestionOpen(false);
+      setActiveSuggestionIndex(0);
+      return;
+    }
+
+    setIsSuggestionOpen(true);
+    setActiveSuggestionIndex((currentIndex) =>
+      Math.max(0, Math.min(currentIndex, suggestions.items.length - 1))
+    );
+  }, [suggestions]);
+
   function setText(nextText: string): void {
     if (value === undefined) {
       setTextState(nextText);
     }
 
+    setIsSuggestionOpen(true);
     onValueChange?.(nextText);
   }
 
   function setCursor(nextCursor: number): void {
     setCursorState(Math.max(0, Math.min(nextCursor, text.length)));
+    setIsSuggestionOpen(true);
   }
 
   function updateText(nextText: string, nextCursor = nextText.length): void {
@@ -103,7 +126,48 @@ export function useEditorState({
     }
 
     setCursorState(Math.max(0, Math.min(nextCursor, nextText.length)));
+    setIsSuggestionOpen(true);
     onValueChange?.(nextText);
+  }
+
+  function moveActiveSuggestion(delta: number): void {
+    if (!isSuggestionOpen || suggestions.items.length === 0) {
+      return;
+    }
+
+    setActiveSuggestionIndex((currentIndex) => {
+      const nextIndex = currentIndex + delta;
+
+      if (nextIndex < 0) {
+        return suggestions.items.length - 1;
+      }
+
+      if (nextIndex >= suggestions.items.length) {
+        return 0;
+      }
+
+      return nextIndex;
+    });
+  }
+
+  function closeSuggestions(): void {
+    setIsSuggestionOpen(false);
+  }
+
+  function applySuggestion(index = activeSuggestionIndex): void {
+    const item = suggestions.items[index];
+
+    if (item === undefined) {
+      return;
+    }
+
+    const start = item.replaceSpan?.start ?? cursor;
+    const end = item.replaceSpan?.end ?? cursor;
+    const nextText = text.slice(0, start) + item.insertText + text.slice(end);
+    const nextCursor = start + item.insertText.length;
+
+    updateText(nextText, nextCursor);
+    setIsSuggestionOpen(false);
   }
 
   return {
@@ -113,9 +177,14 @@ export function useEditorState({
       result,
       suggestions,
       preview: result?.preview ?? null,
+      isSuggestionOpen,
+      activeSuggestionIndex,
     },
     setText,
     setCursor,
     updateText,
+    moveActiveSuggestion,
+    closeSuggestions,
+    applySuggestion,
   };
 }
