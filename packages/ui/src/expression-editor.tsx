@@ -22,10 +22,24 @@ const editorStyle = {
 const panelStyle = {
   border: "1px solid #d0d0d0",
   padding: "12px",
+  borderRadius: "10px",
+  backgroundColor: "#ffffff",
 } satisfies CSSProperties;
 
 const editorFrameStyle = {
   position: "relative",
+} satisfies CSSProperties;
+
+const zoneStyle = {
+  display: "grid",
+  gap: "8px",
+} satisfies CSSProperties;
+
+const zoneTitleStyle = {
+  fontSize: "12px",
+  textTransform: "uppercase",
+  color: "#6b7280",
+  letterSpacing: "0.04em",
 } satisfies CSSProperties;
 
 export interface ExpressionEditorProps {
@@ -60,47 +74,55 @@ export function ExpressionEditor({
 
   return (
     <div style={editorStyle}>
-      <div style={editorFrameStyle}>
-        <div style={panelStyle}>
-        <div>Expression</div>
-        <TextModeRenderer
-          text={snapshot.text}
-          cursor={snapshot.cursor}
-          isSuggestionOpen={snapshot.isSuggestionOpen}
-          onTextChange={(nextText, nextCursor) => {
-            editorState.updateText(nextText, nextCursor);
-          }}
-          onCursorChange={(nextCursor) => {
-            editorState.setCursor(nextCursor);
-          }}
-          onSuggestionPrevious={() => {
-            editorState.moveActiveSuggestion(-1);
-          }}
-          onSuggestionNext={() => {
-            editorState.moveActiveSuggestion(1);
-          }}
-          onSuggestionClose={() => {
-            editorState.closeSuggestions();
-          }}
-          onSuggestionAccept={() => {
-            editorState.applySuggestion();
-          }}
-        />
+      <div style={zoneStyle}>
+        <div style={zoneTitleStyle}>Editor</div>
+        <div style={editorFrameStyle}>
+          <div style={panelStyle}>
+            <TextModeRenderer
+              text={snapshot.text}
+              cursor={snapshot.cursor}
+              isSuggestionOpen={snapshot.isSuggestionOpen}
+              onTextChange={(nextText, nextCursor) => {
+                editorState.updateText(nextText, nextCursor);
+              }}
+              onCursorChange={(nextCursor) => {
+                editorState.setCursor(nextCursor);
+              }}
+              onSuggestionPrevious={() => {
+                editorState.moveActiveSuggestion(-1);
+              }}
+              onSuggestionNext={() => {
+                editorState.moveActiveSuggestion(1);
+              }}
+              onSuggestionClose={() => {
+                editorState.closeSuggestions();
+              }}
+              onSuggestionAccept={() => {
+                editorState.applySuggestion();
+              }}
+            />
+          </div>
+          <SuggestionPanel
+            activeIndex={snapshot.activeSuggestionIndex}
+            isOpen={snapshot.isSuggestionOpen}
+            onSelect={(index) => {
+              editorState.applySuggestion(index);
+            }}
+            suggestions={snapshot.suggestions}
+          />
         </div>
-        <SuggestionPanel
-          activeIndex={snapshot.activeSuggestionIndex}
-          isOpen={snapshot.isSuggestionOpen}
-          onSelect={(index) => {
-            editorState.applySuggestion(index);
-          }}
-          suggestions={snapshot.suggestions}
+      </div>
+      <div style={zoneStyle}>
+        <div style={zoneTitleStyle}>Problems</div>
+        <DiagnosticsPanel
+          diagnostics={snapshot.diagnostics}
+          isMetadataReady={catalog !== undefined && catalog !== null}
         />
       </div>
-      <ResultPanel preview={snapshot.preview} result={snapshot.result} />
-      <DiagnosticsPanel
-        diagnostics={snapshot.diagnostics}
-        isMetadataReady={catalog !== undefined && catalog !== null}
-      />
+      <div style={zoneStyle}>
+        <div style={zoneTitleStyle}>Result</div>
+        <ResultPanel preview={snapshot.preview} result={snapshot.result} />
+      </div>
     </div>
   );
 }

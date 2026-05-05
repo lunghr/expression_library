@@ -11,7 +11,58 @@ import type {
 
 const panelStyle = {
   border: "1px solid #d0d0d0",
-  padding: "12px",
+  borderRadius: "10px",
+  backgroundColor: "#fcfcfc",
+  overflow: "hidden",
+} satisfies CSSProperties;
+
+const headerStyle = {
+  display: "flex",
+  alignItems: "center",
+  justifyContent: "space-between",
+  padding: "10px 12px",
+  borderBottom: "1px solid #e5e7eb",
+  fontSize: "13px",
+  color: "#374151",
+} satisfies CSSProperties;
+
+const statusStyle = {
+  color: "#6b7280",
+  fontSize: "12px",
+} satisfies CSSProperties;
+
+const bodyStyle = {
+  display: "grid",
+  gap: "0",
+} satisfies CSSProperties;
+
+const rowStyle = {
+  display: "grid",
+  gap: "4px",
+  padding: "10px 12px",
+  borderTop: "1px solid #eceff3",
+} satisfies CSSProperties;
+
+const firstRowStyle = {
+  ...rowStyle,
+  borderTop: "none",
+} satisfies CSSProperties;
+
+const labelStyle = {
+  color: "#6b7280",
+  fontSize: "12px",
+  textTransform: "uppercase",
+} satisfies CSSProperties;
+
+const valueStyle = {
+  color: "#111827",
+  fontSize: "13px",
+  wordBreak: "break-word",
+} satisfies CSSProperties;
+
+const mutedValueStyle = {
+  ...valueStyle,
+  color: "#6b7280",
 } satisfies CSSProperties;
 
 export interface ResultPanelProps {
@@ -26,29 +77,39 @@ export function ResultPanel({
   submission,
 }: ResultPanelProps) {
   return (
-    <>
-      <div data-testid="processing-state" style={panelStyle}>
-        <div>Processing State</div>
-        <div>{result === null ? "Metadata Not Ready" : getStateLabel(result.status)}</div>
-      </div>
-
-      <div data-testid="canonical-output" style={panelStyle}>
-        <div>Canonical Output</div>
-        <div>{result?.expression ?? "(none)"}</div>
-      </div>
-
-      <div style={panelStyle}>
+    <div style={panelStyle}>
+      <div style={headerStyle}>
         <div>Preview</div>
-        <div>{getPreviewLabel(preview)}</div>
+        <div style={statusStyle}>{result === null ? "Unavailable" : getStateLabel(result.status)}</div>
       </div>
-
-      {submission === undefined ? null : (
-        <div style={panelStyle}>
-          <div>Execution Result</div>
-          <div>{getSubmissionLabel(submission)}</div>
+      <div style={bodyStyle}>
+        <div data-testid="processing-state" style={firstRowStyle}>
+          <div style={labelStyle}>Processing State</div>
+          <div style={result === null ? mutedValueStyle : valueStyle}>
+            {result === null ? "Metadata not ready." : getStateLabel(result.status)}
+          </div>
         </div>
-      )}
-    </>
+
+        <div data-testid="canonical-output" style={rowStyle}>
+          <div style={labelStyle}>Canonical Output</div>
+          <div style={result?.expression === null || result?.expression === undefined ? mutedValueStyle : valueStyle}>
+            {result?.expression ?? "(none)"}
+          </div>
+        </div>
+
+        <div style={rowStyle}>
+          <div style={labelStyle}>Preview Result</div>
+          <div style={preview === null ? mutedValueStyle : valueStyle}>{getPreviewLabel(preview)}</div>
+        </div>
+
+        {submission === undefined ? null : (
+          <div style={rowStyle}>
+            <div style={labelStyle}>Execution Result</div>
+            <div style={valueStyle}>{getSubmissionLabel(submission)}</div>
+          </div>
+        )}
+      </div>
+    </div>
   );
 }
 
