@@ -1,6 +1,7 @@
 import {
   getSuggestions,
   processExpressionResult,
+  type Diagnostic,
   type SuggestionItem,
   type PreviewResult,
   type ModelCatalog,
@@ -15,6 +16,7 @@ export interface EditorStateSnapshot {
   readonly text: string;
   readonly cursor: number;
   readonly result: ProcessedExpressionResult | null;
+  readonly diagnostics: readonly Diagnostic[];
   readonly suggestions: SuggestionResult;
   readonly preview: PreviewResult | null;
   readonly isSuggestionOpen: boolean;
@@ -45,6 +47,13 @@ const emptySuggestions: SuggestionResult = {
   items: [],
 };
 
+const diagnosticsDelayMs = 1500;
+
+interface DismissedSuggestionState {
+  readonly contextKey: string;
+  readonly query: string;
+}
+
 export function useEditorState({
   catalog,
   initialText = "User.age > 18 && User.active",
@@ -58,6 +67,8 @@ export function useEditorState({
   const [cursor, setCursorState] = useState((value ?? initialText).length);
   const [isSuggestionOpen, setIsSuggestionOpen] = useState(false);
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
+  const [visibleDiagnostics, setVisibleDiagnostics] = useState<readonly Diagnostic[]>([]);
+  const [dismissedSuggestionState, setDismissedSuggestionState] = useState<DismissedSuggestionState | null>(null);
 
   useEffect(() => {
     if (value === undefined) {
@@ -88,10 +99,45 @@ export function useEditorState({
     },
     [catalog, cursor, rootBindings, text],
   );
+  const suggestionContextKey = useMemo(
+    () => getSuggestionContextKey(suggestions, text, cursor),
+    [cursor, suggestions, text],
+  );
+  const suggestionQuery = useMemo(
+    () => getSuggestionQuery(suggestions, text, cursor),
+    [cursor, suggestions, text],
+  );
 
   useEffect(() => {
     onAnalysisChange?.(result);
   }, [onAnalysisChange, result]);
+
+  useEffect(() => {
+    if (result === null) {
+      setVisibleDiagnostics([]);
+      return;
+    }
+
+    if (result.diagnostics.length === 0) {
+      setVisibleDiagnostics([]);
+      return;
+    }
+
+    if (suggestions.items.length === 0) {
+      setVisibleDiagnostics(result.diagnostics);
+      return;
+    }
+
+    setVisibleDiagnostics([]);
+
+    const timeoutId = window.setTimeout(() => {
+      setVisibleDiagnostics(result.diagnostics);
+    }, diagnosticsDelayMs);
+
+    return () => {
+      window.clearTimeout(timeoutId);
+    };
+  }, [result, suggestions]);
 
   useEffect(() => {
     if (suggestions.items.length === 0) {
@@ -100,24 +146,43 @@ export function useEditorState({
       return;
     }
 
+    if (
+      suggestionContextKey !== null
+      && dismissedSuggestionState?.contextKey === suggestionContextKey
+      && suggestionQuery.startsWith(dismissedSuggestionState.query)
+    ) {
+      setIsSuggestionOpen(false);
+      setActiveSuggestionIndex(0);
+      return;
+    }
+
+    if (
+      suggestionContextKey !== null
+      && dismissedSuggestionState !== null
+      && (
+        dismissedSuggestionState.contextKey !== suggestionContextKey
+        || !suggestionQuery.startsWith(dismissedSuggestionState.query)
+      )
+    ) {
+      setDismissedSuggestionState(null);
+    }
+
     setIsSuggestionOpen(true);
     setActiveSuggestionIndex((currentIndex) =>
       Math.max(0, Math.min(currentIndex, suggestions.items.length - 1))
     );
-  }, [suggestions]);
+  }, [dismissedSuggestionState, suggestionContextKey, suggestionQuery, suggestions]);
 
   function setText(nextText: string): void {
     if (value === undefined) {
       setTextState(nextText);
     }
 
-    setIsSuggestionOpen(true);
     onValueChange?.(nextText);
   }
 
   function setCursor(nextCursor: number): void {
     setCursorState(Math.max(0, Math.min(nextCursor, text.length)));
-    setIsSuggestionOpen(true);
   }
 
   function updateText(nextText: string, nextCursor = nextText.length): void {
@@ -126,7 +191,6 @@ export function useEditorState({
     }
 
     setCursorState(Math.max(0, Math.min(nextCursor, nextText.length)));
-    setIsSuggestionOpen(true);
     onValueChange?.(nextText);
   }
 
@@ -152,6 +216,15 @@ export function useEditorState({
 
   function closeSuggestions(): void {
     setIsSuggestionOpen(false);
+    if (suggestionContextKey === null) {
+      setDismissedSuggestionState(null);
+      return;
+    }
+
+    setDismissedSuggestionState({
+      contextKey: suggestionContextKey,
+      query: suggestionQuery,
+    });
   }
 
   function applySuggestion(index = activeSuggestionIndex): void {
@@ -168,6 +241,7 @@ export function useEditorState({
 
     updateText(nextText, nextCursor);
     setIsSuggestionOpen(false);
+    setDismissedSuggestionState(null);
   }
 
   return {
@@ -175,6 +249,7 @@ export function useEditorState({
       text,
       cursor,
       result,
+      diagnostics: visibleDiagnostics,
       suggestions,
       preview: result?.preview ?? null,
       isSuggestionOpen,
@@ -187,4 +262,40 @@ export function useEditorState({
     closeSuggestions,
     applySuggestion,
   };
+}
+
+function getSuggestionContextKey(
+  suggestions: SuggestionResult,
+  text: string,
+  cursor: number,
+): string | null {
+  const firstItem = suggestions.items[0];
+
+  if (firstItem === undefined) {
+    return null;
+  }
+
+  const replaceStart = firstItem.replaceSpan?.start ?? cursor;
+  const beforeReplace = text.slice(0, replaceStart);
+
+  return `${firstItem.kind}:${replaceStart}:${beforeReplace}`;
+}
+
+function getSuggestionQuery(
+  suggestions: SuggestionResult,
+  text: string,
+  cursor: number,
+): string {
+  const firstItem = suggestions.items[0];
+
+  if (firstItem === undefined) {
+    return "";
+  }
+
+  const replaceStart = firstItem.replaceSpan?.start ?? cursor;
+  const replaceEnd = firstItem.replaceSpan?.end ?? cursor;
+  const safeStart = Math.max(0, Math.min(replaceStart, text.length));
+  const safeEnd = Math.max(safeStart, Math.min(replaceEnd, text.length));
+
+  return text.slice(safeStart, safeEnd);
 }

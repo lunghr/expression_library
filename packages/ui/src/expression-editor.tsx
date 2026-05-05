@@ -96,11 +96,11 @@ export function ExpressionEditor({
           suggestions={snapshot.suggestions}
         />
       </div>
-      {catalog === undefined || catalog === null ? (
-        <div style={panelStyle}>Metadata is not ready.</div>
-      ) : null}
       <ResultPanel preview={snapshot.preview} result={snapshot.result} />
-      <DiagnosticsPanel diagnostics={snapshot.result?.diagnostics ?? []} />
+      <DiagnosticsPanel
+        diagnostics={snapshot.diagnostics}
+        isMetadataReady={catalog !== undefined && catalog !== null}
+      />
     </div>
   );
 }
