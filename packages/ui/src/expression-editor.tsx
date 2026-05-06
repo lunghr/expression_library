@@ -8,6 +8,7 @@ import type { CSSProperties } from "react";
 
 import { DiagnosticsPanel } from "./diagnostics-panel.js";
 import { useEditorState } from "./editor-state.js";
+import { expressionEditorConfig } from "./expression-editor.config.js";
 import { ResultPanel } from "./result-panel.js";
 import { SuggestionPanel } from "./suggestion-panel.js";
 import { TextModeRenderer } from "./text-mode-renderer.js";
@@ -81,7 +82,8 @@ export function ExpressionEditor({
             <TextModeRenderer
               text={snapshot.text}
               cursor={snapshot.cursor}
-              isSuggestionOpen={snapshot.isSuggestionOpen}
+              isSuggestionOpen={expressionEditorConfig.enableAutocomplete && snapshot.isSuggestionOpen}
+              placeholder={expressionEditorConfig.placeholder}
               onTextChange={(nextText, nextCursor) => {
                 editorState.updateText(nextText, nextCursor);
               }}
@@ -104,7 +106,7 @@ export function ExpressionEditor({
           </div>
           <SuggestionPanel
             activeIndex={snapshot.activeSuggestionIndex}
-            isOpen={snapshot.isSuggestionOpen}
+            isOpen={expressionEditorConfig.enableAutocomplete && snapshot.isSuggestionOpen}
             onSelect={(index) => {
               editorState.applySuggestion(index);
             }}
@@ -112,17 +114,21 @@ export function ExpressionEditor({
           />
         </div>
       </div>
-      <div style={zoneStyle}>
-        <div style={zoneTitleStyle}>Problems</div>
-        <DiagnosticsPanel
-          diagnostics={snapshot.diagnostics}
-          isMetadataReady={catalog !== undefined && catalog !== null}
-        />
-      </div>
-      <div style={zoneStyle}>
-        <div style={zoneTitleStyle}>Result</div>
-        <ResultPanel preview={snapshot.preview} result={snapshot.result} />
-      </div>
+      {expressionEditorConfig.showProblems ? (
+        <div style={zoneStyle}>
+          <div style={zoneTitleStyle}>Problems</div>
+          <DiagnosticsPanel
+            diagnostics={snapshot.diagnostics}
+            isMetadataReady={catalog !== undefined && catalog !== null}
+          />
+        </div>
+      ) : null}
+      {expressionEditorConfig.showResult ? (
+        <div style={zoneStyle}>
+          <div style={zoneTitleStyle}>Result</div>
+          <ResultPanel preview={snapshot.preview} result={snapshot.result} />
+        </div>
+      ) : null}
     </div>
   );
 }

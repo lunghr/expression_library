@@ -1,5 +1,5 @@
 import { EditorState as CodeMirrorState } from "@codemirror/state";
-import { EditorView, keymap } from "@codemirror/view";
+import { EditorView, keymap, placeholder as codeMirrorPlaceholder } from "@codemirror/view";
 import { basicSetup } from "codemirror";
 import type { CSSProperties } from "react";
 import { useEffect, useRef } from "react";
@@ -14,6 +14,7 @@ const editorHostStyle = {
 export interface TextModeRendererProps {
   readonly text: string;
   readonly cursor: number;
+  readonly placeholder?: string;
   readonly onTextChange: (value: string, cursor: number) => void;
   readonly onCursorChange: (cursor: number) => void;
   readonly isSuggestionOpen?: boolean;
@@ -26,6 +27,7 @@ export interface TextModeRendererProps {
 export function TextModeRenderer({
   text,
   cursor,
+  placeholder = "",
   onTextChange,
   onCursorChange,
   isSuggestionOpen = false,
@@ -150,6 +152,7 @@ export function TextModeRenderer({
               },
             },
           ]),
+          codeMirrorPlaceholder(placeholder),
           updateListener,
           EditorView.theme({
             "&": {
