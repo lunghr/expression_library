@@ -1,5 +1,17 @@
-import { EditorState as CodeMirrorState } from "@codemirror/state";
-import { EditorView, keymap, placeholder as codeMirrorPlaceholder } from "@codemirror/view";
+import {
+  EditorState as CodeMirrorState,
+  RangeSetBuilder,
+  StateEffect,
+  StateField,
+} from "@codemirror/state";
+import type { Diagnostic } from "@expression-editor/core";
+import {
+  Decoration,
+  type DecorationSet,
+  EditorView,
+  keymap,
+  placeholder as codeMirrorPlaceholder,
+} from "@codemirror/view";
 import { basicSetup } from "codemirror";
 import type { CSSProperties } from "react";
 import { useEffect, useRef } from "react";
@@ -11,9 +23,26 @@ const editorHostStyle = {
   overflow: "hidden",
 } satisfies CSSProperties;
 
+const setDiagnosticDecorationsEffect = StateEffect.define<DecorationSet>();
+
+const diagnosticDecorationsField = StateField.define<DecorationSet>({
+  create: () => Decoration.none,
+  update: (decorations, transaction) => {
+    for (const effect of transaction.effects) {
+      if (effect.is(setDiagnosticDecorationsEffect)) {
+        return effect.value;
+      }
+    }
+
+    return decorations.map(transaction.changes);
+  },
+  provide: (field) => EditorView.decorations.from(field),
+});
+
 export interface TextModeRendererProps {
   readonly text: string;
   readonly cursor: number;
+  readonly diagnostics?: readonly Diagnostic[];
   readonly placeholder?: string;
   readonly onTextChange: (value: string, cursor: number) => void;
   readonly onCursorChange: (cursor: number) => void;
@@ -27,6 +56,7 @@ export interface TextModeRendererProps {
 export function TextModeRenderer({
   text,
   cursor,
+  diagnostics = [],
   placeholder = "",
   onTextChange,
   onCursorChange,
@@ -153,6 +183,7 @@ export function TextModeRenderer({
             },
           ]),
           codeMirrorPlaceholder(placeholder),
+          diagnosticDecorationsField,
           updateListener,
           EditorView.theme({
             "&": {
@@ -193,6 +224,13 @@ export function TextModeRenderer({
             },
             ".cm-panels": {
               display: "none",
+            },
+            ".cm-diagnosticUnderline": {
+              textDecorationLine: "underline",
+              textDecorationStyle: "wavy",
+              textDecorationColor: "#dc2626",
+              textUnderlineOffset: "3px",
+              backgroundColor: "rgba(220, 38, 38, 0.08)",
             },
           }, {dark: false}),
         ],
@@ -239,5 +277,43 @@ export function TextModeRenderer({
     isSyncingRef.current = false;
   }, [cursor, text]);
 
+  useEffect(() => {
+    const view = viewRef.current;
+
+    if (view === null) {
+      return;
+    }
+
+    view.dispatch({
+      effects: setDiagnosticDecorationsEffect.of(
+        createDiagnosticDecorations(text, diagnostics),
+      ),
+    });
+  }, [diagnostics, text]);
+
   return <div data-testid="expression-editor" ref={hostRef} style={editorHostStyle}/>;
+}
+
+function createDiagnosticDecorations(
+  text: string,
+  diagnostics: readonly Diagnostic[],
+): DecorationSet {
+  const builder = new RangeSetBuilder<Decoration>();
+
+  for (const diagnostic of diagnostics) {
+    const start = Math.max(0, Math.min(diagnostic.span.start, text.length));
+    const end = Math.max(start, Math.min(diagnostic.span.end, text.length));
+
+    if (start === end) {
+      continue;
+    }
+
+    builder.add(
+      start,
+      end,
+      Decoration.mark({class: "cm-diagnosticUnderline"}),
+    );
+  }
+
+  return builder.finish();
 }

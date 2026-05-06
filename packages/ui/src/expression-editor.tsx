@@ -80,6 +80,7 @@ export function ExpressionEditor({
         <div style={editorFrameStyle}>
           <div style={panelStyle}>
             <TextModeRenderer
+              diagnostics={snapshot.diagnostics}
               text={snapshot.text}
               cursor={snapshot.cursor}
               isSuggestionOpen={expressionEditorConfig.enableAutocomplete && snapshot.isSuggestionOpen}
