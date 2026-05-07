@@ -2,7 +2,7 @@ import { expect, test, type Page } from "@playwright/test";
 
 test("valid expression live analysis shows success and no problems", async ({ page }) => {
   await openPlayground(page);
-  await setEditorText(page, "User.age > 18.5");
+  await setEditorText(page, "buyer.age > 18.5");
 
   await expect(page.locator("body")).toContainText("Processing State");
   await expect(page.locator("body")).toContainText("No problems.");
@@ -11,23 +11,23 @@ test("valid expression live analysis shows success and no problems", async ({ pa
 
 test("root suggestion insertion works with keyboard and Tab", async ({ page }) => {
   await openPlayground(page);
-  await setEditorText(page, "O");
+  await setEditorText(page, "b");
   const editor = getEditorTextbox(page);
 
   await expect(page.getByTestId("suggestion-panel")).toBeVisible();
-  await expect(page.getByTestId("suggestion-panel")).toContainText("Order");
+  await expect(page.getByTestId("suggestion-panel")).toContainText("buyer");
 
   await editor.click();
   await runSuggestionAction(page, "next");
   await runSuggestionAction(page, "previous");
   await runSuggestionAction(page, "accept");
 
-  await expect(getEditorContent(page)).toContainText("Order");
+  await expect(getEditorContent(page)).toContainText("buyer");
 });
 
 test("field suggestion after dot inserts the selected field", async ({ page }) => {
   await openPlayground(page);
-  await setEditorText(page, "User.a");
+  await setEditorText(page, "buyer.a");
   const suggestionPanel = page.getByTestId("suggestion-panel");
 
   await expect(suggestionPanel).toBeVisible();
@@ -35,12 +35,12 @@ test("field suggestion after dot inserts the selected field", async ({ page }) =
   await expect(suggestionPanel).toContainText("active");
   await suggestionPanel.getByRole("button", { name: /active/i }).click();
 
-  await expect(getEditorContent(page)).toContainText("User.active");
+  await expect(getEditorContent(page)).toContainText("buyer.active");
 });
 
 test("invalid expression shows problems and inline underline", async ({ page }) => {
   await openPlayground(page);
-  await setEditorText(page, "User.age + User.active");
+  await setEditorText(page, "buyer.age + seller.active");
 
   await expect(page.locator("body")).toContainText("Semantic Error");
   await expect(page.getByTestId("diagnostics-panel")).toContainText("SEM004");
@@ -50,14 +50,15 @@ test("invalid expression shows problems and inline underline", async ({ page }) 
 test("preview uses real demo context values for User and Order", async ({ page }) => {
   await openPlayground(page);
 
-  await expect(page.getByTestId("host-integration-panel")).toContainText("User, Order");
-  await expect(page.getByTestId("host-integration-panel")).toContainText("User, Order");
+  await expect(page.getByTestId("host-integration-panel")).toContainText("buyer -> User");
+  await expect(page.getByTestId("host-integration-panel")).toContainText("seller -> User");
+  await expect(page.getByTestId("host-integration-panel")).toContainText("order -> Order");
 
-  await setEditorText(page, "User.age + 5");
+  await setEditorText(page, "buyer.age + 5");
   await expect(page.locator("body")).toContainText("32");
 
   await openPlayground(page);
-  await setEditorText(page, "Order.total + 10");
+  await setEditorText(page, "order.total + 10");
   await expect(page.locator("body")).toContainText("100");
 });
 
@@ -66,7 +67,7 @@ test("demo transport flow stays in playground and shows transport result", async
 
   await expect(page.getByRole("button", { name: "Send Expression" })).toBeVisible();
 
-  await setEditorText(page, "Order.total + 10");
+  await setEditorText(page, "order.total + 10");
   await page.getByRole("button", { name: "Send Expression" }).click({ force: true });
 
   await expect(page.locator("body")).toContainText("Transport Result");

@@ -56,7 +56,7 @@ interface DismissedSuggestionState {
 
 export function useEditorState({
   catalog,
-  initialText = "User.age > 18 && User.active",
+  initialText = "",
   value,
   onValueChange,
   rootBindings,

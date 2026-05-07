@@ -1,5 +1,6 @@
 import {
   EditorState as CodeMirrorState,
+  Prec,
   RangeSetBuilder,
   StateEffect,
   StateField,
@@ -9,6 +10,7 @@ import {
   Decoration,
   type DecorationSet,
   EditorView,
+  keymap,
   placeholder as codeMirrorPlaceholder,
 } from "@codemirror/view";
 import { basicSetup } from "codemirror";
@@ -145,34 +147,52 @@ export function TextModeRenderer({
         doc: text,
         extensions: [
           basicSetup,
-          EditorView.domEventHandlers({
-            keydown: (event) => {
-              if (!isSuggestionOpenRef.current) {
-                return false;
-              }
-
-              switch (event.key) {
-                case "ArrowUp":
-                  event.preventDefault();
-                  onSuggestionPreviousRef.current?.();
-                  return true;
-                case "ArrowDown":
-                  event.preventDefault();
-                  onSuggestionNextRef.current?.();
-                  return true;
-                case "Escape":
-                  event.preventDefault();
-                  onSuggestionCloseRef.current?.();
-                  return true;
-                case "Tab":
-                  event.preventDefault();
-                  onSuggestionAcceptRef.current?.();
-                  return true;
-                default:
+          Prec.highest(keymap.of([
+            {
+              key: "ArrowUp",
+              run: () => {
+                if (!isSuggestionOpenRef.current) {
                   return false;
-              }
+                }
+
+                onSuggestionPreviousRef.current?.();
+                return true;
+              },
             },
-          }),
+            {
+              key: "ArrowDown",
+              run: () => {
+                if (!isSuggestionOpenRef.current) {
+                  return false;
+                }
+
+                onSuggestionNextRef.current?.();
+                return true;
+              },
+            },
+            {
+              key: "Escape",
+              run: () => {
+                if (!isSuggestionOpenRef.current) {
+                  return false;
+                }
+
+                onSuggestionCloseRef.current?.();
+                return true;
+              },
+            },
+            {
+              key: "Tab",
+              run: () => {
+                if (!isSuggestionOpenRef.current) {
+                  return false;
+                }
+
+                onSuggestionAcceptRef.current?.();
+                return true;
+              },
+            },
+          ])),
           codeMirrorPlaceholder(placeholder),
           diagnosticDecorationsField,
           updateListener,

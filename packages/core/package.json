@@ -1,12 +1,32 @@
 {
   "name": "@expression-editor/core",
-  "private": true,
   "version": "0.0.0",
+  "description": "Headless core layer for the expression editor library.",
   "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
   "scripts": {
     "build": "tsc -b",
+    "prepack": "npm run build",
     "test": "vitest run"
   },
+  "sideEffects": false,
+  "keywords": [
+    "expression-editor",
+    "expression-language",
+    "parser",
+    "diagnostics",
+    "json-schema"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lunghr/expression_library.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lunghr/expression_library/issues"
+  },
+  "homepage": "https://github.com/lunghr/expression_library#readme",
   "dependencies": {
     "ajv": "^8.17.1"
   },
@@ -14,6 +34,21 @@
     "vitest": "^3.2.4"
   },
   "exports": {
-    ".": "./src/index.ts"
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    },
+    "./public-api": {
+      "import": "./dist/public-api.js",
+      "types": "./dist/public-api.d.ts"
+    }
+  },
+  "files": [
+    "dist",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }

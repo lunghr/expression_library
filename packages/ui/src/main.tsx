@@ -1,4 +1,8 @@
-import { createDemoHostApplication } from "@expression-editor/adapters";
+import {
+  createDemoExpressionTransport,
+  createDemoMetadataProvider,
+  createHostApplicationAdapter,
+} from "@expression-editor/adapters";
 import type {
   ModelCatalog,
   PreviewContext,
@@ -80,7 +84,15 @@ function DemoApplication() {
 
     async function initializeHostApplication(): Promise<void> {
       try {
-        const hostApplication = createDemoHostApplication();
+        const hostApplication = createHostApplicationAdapter({
+          metadataProvider: createDemoMetadataProvider(),
+          expressionTransport: createDemoExpressionTransport(),
+          rootBindingSource: {
+            buyer: "User",
+            seller: "User",
+            order: "Order",
+          },
+        });
         const nextServices = await hostApplication.initialize();
 
         if (!cancelled) {

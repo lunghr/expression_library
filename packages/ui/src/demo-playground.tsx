@@ -70,6 +70,19 @@ const hostValueStyle = {
   wordBreak: "break-word",
 } satisfies CSSProperties;
 
+const previewContextStyle = {
+  margin: 0,
+  padding: "10px 12px",
+  borderRadius: "8px",
+  backgroundColor: "#ffffff",
+  border: "1px solid #e5e7eb",
+  color: "#374151",
+  fontSize: "12px",
+  lineHeight: "1.5",
+  whiteSpace: "pre-wrap",
+  wordBreak: "break-word",
+} satisfies CSSProperties;
+
 const actionsStyle = {
   display: "flex",
   gap: "8px",
@@ -129,6 +142,10 @@ export function DemoPlayground({
     () => getPreviewContextKeysLabel(previewContext),
     [previewContext],
   );
+  const previewContextText = useMemo(
+    () => getPreviewContextText(previewContext),
+    [previewContext],
+  );
 
   async function submitExpression(): Promise<void> {
     if (onSubmitExpression === undefined) {
@@ -172,7 +189,12 @@ export function DemoPlayground({
           </div>
           <div style={hostRowStyle}>
             <div style={hostLabelStyle}>Preview Context</div>
-            <div style={hostValueStyle}>{previewKeysLabel}</div>
+            <div style={hostGridStyle}>
+              <div style={hostValueStyle}>{previewKeysLabel}</div>
+              <pre data-testid="preview-context-panel" style={previewContextStyle}>
+                {previewContextText}
+              </pre>
+            </div>
           </div>
           <div style={hostRowStyle}>
             <div style={hostLabelStyle}>Analysis Callback</div>
@@ -237,6 +259,14 @@ function getPreviewContextKeysLabel(previewContext: PreviewContext | undefined):
 
   const keys = Object.keys(previewContext);
   return keys.length === 0 ? "(empty)" : keys.join(", ");
+}
+
+function getPreviewContextText(previewContext: PreviewContext | undefined): string {
+  if (previewContext === undefined) {
+    return "Not provided.";
+  }
+
+  return JSON.stringify(previewContext, null, 2);
 }
 
 function getAnalysisLabel(result: ProcessedExpressionResult | null): string {
