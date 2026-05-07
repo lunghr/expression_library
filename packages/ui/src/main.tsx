@@ -1,9 +1,13 @@
 import { createDemoHostApplication } from "@expression-editor/adapters";
-import type { ModelCatalog, RootBindingContext } from "@expression-editor/core";
+import type {
+  ModelCatalog,
+  PreviewContext,
+  RootBindingContext,
+} from "@expression-editor/core";
 import { StrictMode, useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 
-import { EditorShell } from "./editor-shell.js";
+import { DemoPlayground } from "./demo-playground.js";
 import type { SubmissionResultView } from "./submission-result.js";
 
 interface DemoHostSubmitResult {
@@ -109,8 +113,11 @@ function DemoApplication() {
     return <div>Initializing demo host application...</div>;
   }
 
+  const rootBindings = services.rootBindings;
+  const previewContext = createDemoPreviewContext(rootBindings);
+
   return (
-    <EditorShell
+    <DemoPlayground
       catalog={catalog}
       isRefreshingMetadata={isRefreshingMetadata}
       onRefreshMetadata={async () => {
@@ -127,9 +134,43 @@ function DemoApplication() {
         const submission = await services.submitExpression(source);
         return mapSubmissionResult(submission);
       }}
-      rootBindings={services.rootBindings}
+      previewContext={previewContext}
+      rootBindings={rootBindings}
     />
   );
+}
+
+function createDemoPreviewContext(
+  rootBindings: RootBindingContext,
+): PreviewContext {
+  const previewContext: Record<string, PreviewContext[string]> = {};
+
+  for (const binding of rootBindings.bindings) {
+    previewContext[binding.name] = createSampleValue(binding.modelName);
+  }
+
+  return previewContext;
+}
+
+function createSampleValue(modelName: string): PreviewContext[string] {
+  if (modelName === "User") {
+    return {
+      age: 27,
+      active: true,
+      address: {
+        city: "Moscow",
+      },
+    };
+  }
+
+  if (modelName === "Order") {
+    return {
+      total: 90,
+      status: "Open",
+    };
+  }
+
+  return {};
 }
 
 const rootElement = document.getElementById("root");

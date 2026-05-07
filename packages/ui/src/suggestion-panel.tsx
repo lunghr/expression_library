@@ -87,7 +87,7 @@ export function SuggestionPanel({
   }
 
   return (
-    <div style={popupStyle}>
+    <div data-testid="suggestion-panel" style={popupStyle}>
       <ul style={listStyle}>
         {suggestions.items.map((item, index) => (
           <li key={`${item.kind}-${item.label}-${index}`}>

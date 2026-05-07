@@ -97,13 +97,13 @@ export function ResultPanel({
           </div>
         </div>
 
-        <div style={rowStyle}>
+        <div data-testid="preview-result" style={rowStyle}>
           <div style={labelStyle}>Preview Result</div>
           <div style={preview === null ? mutedValueStyle : valueStyle}>{getPreviewLabel(preview)}</div>
         </div>
 
         {submission === undefined ? null : (
-          <div style={rowStyle}>
+          <div data-testid="execution-result" style={rowStyle}>
             <div style={labelStyle}>Execution Result</div>
             <div style={valueStyle}>{getSubmissionLabel(submission)}</div>
           </div>

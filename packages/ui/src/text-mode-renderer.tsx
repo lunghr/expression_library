@@ -9,12 +9,21 @@ import {
   Decoration,
   type DecorationSet,
   EditorView,
-  keymap,
   placeholder as codeMirrorPlaceholder,
 } from "@codemirror/view";
 import { basicSetup } from "codemirror";
 import type { CSSProperties } from "react";
 import { useEffect, useRef } from "react";
+
+interface TestableEditorHost extends HTMLDivElement {
+  __expressionEditorView?: EditorView;
+  __expressionEditorTestActions?: {
+    previous(): void;
+    next(): void;
+    close(): void;
+    accept(): void;
+  };
+}
 
 const editorHostStyle = {
   border: "1px solid #d0d0d0",
@@ -66,7 +75,7 @@ export function TextModeRenderer({
   onSuggestionClose,
   onSuggestionAccept,
 }: TextModeRendererProps) {
-  const hostRef = useRef<HTMLDivElement | null>(null);
+  const hostRef = useRef<TestableEditorHost | null>(null);
   const viewRef = useRef<EditorView | null>(null);
   const isSyncingRef = useRef(false);
   const onTextChangeRef = useRef(onTextChange);
@@ -136,52 +145,34 @@ export function TextModeRenderer({
         doc: text,
         extensions: [
           basicSetup,
-          keymap.of([
-            {
-              key: "ArrowUp",
-              run: () => {
-                if (!isSuggestionOpenRef.current) {
-                  return false;
-                }
+          EditorView.domEventHandlers({
+            keydown: (event) => {
+              if (!isSuggestionOpenRef.current) {
+                return false;
+              }
 
-                onSuggestionPreviousRef.current?.();
-                return true;
-              },
-            },
-            {
-              key: "ArrowDown",
-              run: () => {
-                if (!isSuggestionOpenRef.current) {
+              switch (event.key) {
+                case "ArrowUp":
+                  event.preventDefault();
+                  onSuggestionPreviousRef.current?.();
+                  return true;
+                case "ArrowDown":
+                  event.preventDefault();
+                  onSuggestionNextRef.current?.();
+                  return true;
+                case "Escape":
+                  event.preventDefault();
+                  onSuggestionCloseRef.current?.();
+                  return true;
+                case "Tab":
+                  event.preventDefault();
+                  onSuggestionAcceptRef.current?.();
+                  return true;
+                default:
                   return false;
-                }
-
-                onSuggestionNextRef.current?.();
-                return true;
-              },
+              }
             },
-            {
-              key: "Escape",
-              run: () => {
-                if (!isSuggestionOpenRef.current) {
-                  return false;
-                }
-
-                onSuggestionCloseRef.current?.();
-                return true;
-              },
-            },
-            {
-              key: "Tab",
-              run: () => {
-                if (!isSuggestionOpenRef.current) {
-                  return false;
-                }
-
-                onSuggestionAcceptRef.current?.();
-                return true;
-              },
-            },
-          ]),
+          }),
           codeMirrorPlaceholder(placeholder),
           diagnosticDecorationsField,
           updateListener,
@@ -239,8 +230,25 @@ export function TextModeRenderer({
     });
 
     viewRef.current = view;
+    host.__expressionEditorView = view;
+    host.__expressionEditorTestActions = {
+      previous() {
+        onSuggestionPreviousRef.current?.();
+      },
+      next() {
+        onSuggestionNextRef.current?.();
+      },
+      close() {
+        onSuggestionCloseRef.current?.();
+      },
+      accept() {
+        onSuggestionAcceptRef.current?.();
+      },
+    };
 
     return () => {
+      delete host.__expressionEditorView;
+      delete host.__expressionEditorTestActions;
       view.destroy();
       viewRef.current = null;
     };
@@ -299,8 +307,15 @@ function createDiagnosticDecorations(
   diagnostics: readonly Diagnostic[],
 ): DecorationSet {
   const builder = new RangeSetBuilder<Decoration>();
+  const sortedDiagnostics = [...diagnostics].sort((left, right) => {
+    if (left.span.start !== right.span.start) {
+      return left.span.start - right.span.start;
+    }
 
-  for (const diagnostic of diagnostics) {
+    return left.span.end - right.span.end;
+  });
+
+  for (const diagnostic of sortedDiagnostics) {
     const start = Math.max(0, Math.min(diagnostic.span.start, text.length));
     const end = Math.max(start, Math.min(diagnostic.span.end, text.length));
 

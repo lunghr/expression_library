@@ -56,7 +56,7 @@ export interface ExpressionEditorProps {
 export function ExpressionEditor({
   catalog,
   value,
-  initialValue = "User.age > 18 && User.active",
+  initialValue = "",
   onChange,
   rootBindings,
   previewContext,

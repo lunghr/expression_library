@@ -18,6 +18,16 @@ const defaultMetadataSource = {
         },
       },
     },
+    {
+      name: "Order",
+      schema: {
+        type: "object",
+        properties: {
+          total: { type: "number" },
+          status: { type: "string" },
+        },
+      },
+    },
   ],
 } as const;
 
