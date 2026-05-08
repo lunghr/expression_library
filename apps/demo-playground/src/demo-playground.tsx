@@ -4,9 +4,8 @@ import type {
   ProcessedExpressionResult,
   RootBindingContext,
 } from "@expression-editor/core";
+import { ExpressionEditor } from "@expression-editor/ui";
 import { useMemo, useState, type CSSProperties } from "react";
-
-import { ExpressionEditor } from "./expression-editor.js";
 import type {
   ExecutionResultView,
   SubmissionResultView,
@@ -206,7 +205,7 @@ export function DemoPlayground({
       <ExpressionEditor
         catalog={catalog}
         onAnalysisChange={setAnalysis}
-        onChange={(nextValue) => {
+        onChange={(nextValue: string) => {
           setText(nextValue);
           setSubmission(null);
         }}

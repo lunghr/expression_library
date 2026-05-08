@@ -4,11 +4,6 @@ import type {
 } from "@expression-editor/core";
 import type { CSSProperties } from "react";
 
-import type {
-  ExecutionResultView,
-  SubmissionResultView,
-} from "./submission-result.js";
-
 const panelStyle = {
   border: "1px solid #d0d0d0",
   borderRadius: "10px",
@@ -68,13 +63,11 @@ const mutedValueStyle = {
 export interface ResultPanelProps {
   readonly result: ProcessedExpressionResult | null;
   readonly preview?: PreviewResult | null;
-  readonly submission?: SubmissionResultView | null;
 }
 
 export function ResultPanel({
   result,
   preview = null,
-  submission,
 }: ResultPanelProps) {
   return (
     <div style={panelStyle}>
@@ -101,13 +94,6 @@ export function ResultPanel({
           <div style={labelStyle}>Preview Result</div>
           <div style={preview === null ? mutedValueStyle : valueStyle}>{getPreviewLabel(preview)}</div>
         </div>
-
-        {submission === undefined ? null : (
-          <div data-testid="execution-result" style={rowStyle}>
-            <div style={labelStyle}>Execution Result</div>
-            <div style={valueStyle}>{getSubmissionLabel(submission)}</div>
-          </div>
-        )}
       </div>
     </div>
   );
@@ -124,33 +110,6 @@ function getStateLabel(status: string): string {
     default:
       return status;
   }
-}
-
-function getSubmissionLabel(
-  submission: SubmissionResultView | null,
-): string {
-  if (submission === null) {
-    return "Not submitted.";
-  }
-
-  switch (submission.status) {
-    case "not_sent":
-      return `Not sent: ${submission.reason}`;
-    case "transport_error":
-      return `Transport error: ${submission.message}`;
-    case "sent":
-      return getExecutionLabel(submission.executionResult);
-  }
-}
-
-function getExecutionLabel(
-  executionResult: ExecutionResultView,
-): string {
-  if ("value" in executionResult) {
-    return `Success: ${JSON.stringify(executionResult.value)}`;
-  }
-
-  return `Execution error: ${executionResult.message}`;
 }
 
 function getPreviewLabel(preview: PreviewResult | null): string {
