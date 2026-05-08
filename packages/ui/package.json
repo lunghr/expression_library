@@ -1,13 +1,31 @@
 {
   "name": "@expression-editor/ui",
-  "private": true,
   "version": "0.0.0",
+  "description": "React UI layer for the expression editor library.",
   "type": "module",
+  "license": "MIT",
   "main": "./dist/index.js",
   "types": "./dist/index.d.ts",
   "scripts": {
-    "build": "tsc -b"
+    "build": "tsc -b",
+    "prepack": "npm run build"
   },
+  "sideEffects": false,
+  "keywords": [
+    "expression-editor",
+    "react",
+    "codemirror",
+    "editor",
+    "autocomplete"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lunghr/expression_library.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lunghr/expression_library/issues"
+  },
+  "homepage": "https://github.com/lunghr/expression_library#readme",
   "dependencies": {
     "@codemirror/state": "^6.5.2",
     "@codemirror/view": "^6.38.6",
@@ -29,5 +47,36 @@
       "import": "./dist/index.js",
       "types": "./dist/index.d.ts"
     }
+  },
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/index.d.ts.map",
+    "dist/diagnostics-panel.js",
+    "dist/diagnostics-panel.d.ts",
+    "dist/diagnostics-panel.d.ts.map",
+    "dist/editor-state.js",
+    "dist/editor-state.d.ts",
+    "dist/editor-state.d.ts.map",
+    "dist/expression-editor.js",
+    "dist/expression-editor.d.ts",
+    "dist/expression-editor.d.ts.map",
+    "dist/expression-editor.config.js",
+    "dist/expression-editor.config.d.ts",
+    "dist/expression-editor.config.d.ts.map",
+    "dist/result-panel.js",
+    "dist/result-panel.d.ts",
+    "dist/result-panel.d.ts.map",
+    "dist/suggestion-panel.js",
+    "dist/suggestion-panel.d.ts",
+    "dist/suggestion-panel.d.ts.map",
+    "dist/text-mode-renderer.js",
+    "dist/text-mode-renderer.d.ts",
+    "dist/text-mode-renderer.d.ts.map",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
   }
 }
