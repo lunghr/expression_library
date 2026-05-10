@@ -77,6 +77,7 @@ describe("host application adapter", () => {
     expect(services.catalog.getModel("User")?.name).toBe("User");
     expect(services.rootBindings.bindings).toEqual([
       {name: "User", modelName: "User"},
+      {name: "Order", modelName: "Order"},
     ]);
 
     const processed = services.processExpression("User.age > 18");

@@ -1,7 +1,9 @@
+import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 import { defineConfig } from "vitest/config";
 
-const coreEntry = fileURLToPath(new URL("../core/src/index.ts", import.meta.url));
+const currentDirectory = dirname(fileURLToPath(import.meta.url));
+const coreEntry = resolve(currentDirectory, "../core/src/index.ts");
 
 export default defineConfig({
   resolve: {
