@@ -1,0 +1,56 @@
+{
+  "name": "@expression-editor/adapters",
+  "version": "0.1.0",
+  "description": "Integration adapters for the expression editor library.",
+  "type": "module",
+  "license": "MIT",
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "scripts": {
+    "build": "tsc -b",
+    "prepack": "npm run build",
+    "test": "vitest run tests/metadata-provider.test.ts tests/expression-transport.test.ts tests/host-application.test.ts tests/integration-flow.test.ts tests/architecture-boundaries.test.ts --pool vmThreads"
+  },
+  "sideEffects": false,
+  "keywords": [
+    "expression-editor",
+    "adapters",
+    "metadata",
+    "transport",
+    "integration"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lunghr/expression_library.git"
+  },
+  "bugs": {
+    "url": "https://github.com/lunghr/expression_library/issues"
+  },
+  "homepage": "https://github.com/lunghr/expression_library#readme",
+  "dependencies": {
+    "@expression-editor/core": "0.1.0"
+  },
+  "devDependencies": {
+    "vitest": "^3.2.4"
+  },
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "types": "./dist/index.d.ts"
+    }
+  },
+  "files": [
+    "dist/index.js",
+    "dist/index.d.ts",
+    "dist/index.d.ts.map",
+    "dist/expression-transport",
+    "dist/host-application",
+    "dist/metadata-provider",
+    "dist/root-bindings",
+    "README.md",
+    "LICENSE"
+  ],
+  "publishConfig": {
+    "access": "public"
+  }
+}
