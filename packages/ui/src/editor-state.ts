@@ -2,7 +2,6 @@ import {
   getSuggestions,
   processExpressionResult,
   type Diagnostic,
-  type SuggestionItem,
   type PreviewResult,
   type ModelCatalog,
   type PreviewContext,

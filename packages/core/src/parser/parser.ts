@@ -1,7 +1,6 @@
 import type {
   AnyExpressionNode,
   Diagnostic,
-  IdentifierNode,
   ParseResult,
   ReferenceExpressionNode,
 } from "../contracts/index.js";

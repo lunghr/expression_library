@@ -1,4 +1,4 @@
-import type { SuggestionItem, SuggestionResult } from "@expression-editor/core";
+import type { SuggestionResult } from "@expression-editor/core";
 import type { CSSProperties } from "react";
 
 const popupStyle = {
