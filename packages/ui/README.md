@@ -1,5 +1,57 @@
 # @expression-editor/ui
 
+React UI-слой для библиотеки редактора выражений.
+
+Этот пакет содержит переиспользуемую текстовую оболочку редактора, построенную на:
+
+- `@expression-editor/core`
+- React
+- CodeMirror 6
+
+Внутри есть:
+
+- `ExpressionEditor`
+- хук состояния редактора
+- UI всплывающего списка подсказок
+- UI панели диагностик
+- UI панели результата и предварительного просмотра
+
+### Установка
+
+```bash
+npm install @expression-editor/ui
+```
+
+### Основное использование
+
+```tsx
+import type { PreviewContext, RootBindingContext } from "@expression-editor/core";
+import { ExpressionEditor } from "@expression-editor/ui";
+
+function Example() {
+  const catalog = undefined;
+  const rootBindings = undefined as RootBindingContext | undefined;
+  const previewContext = undefined as PreviewContext | undefined;
+
+  return (
+    <ExpressionEditor
+      catalog={catalog}
+      previewContext={previewContext}
+      rootBindings={rootBindings}
+      value=""
+    />
+  );
+}
+```
+
+### Demo app
+
+Явный пример использования библиотеки находится в:
+
+- `apps/demo-playground`
+
+---
+
 React UI layer for the expression editor library.
 
 This package contains the reusable text-mode editor shell built on top of:
@@ -44,13 +96,8 @@ function Example() {
 }
 ```
 
-## Scope
+## Demo app
 
-This package is a UI layer only.
+An explicit library usage example is available in:
 
-- parsing stays in `@expression-editor/core`
-- diagnostics logic stays in `@expression-editor/core`
-- semantic logic stays in `@expression-editor/core`
-- transport and metadata provider integration stay outside this package
-
-The demo playground is kept in a separate app inside the repository and is not part of the npm package.
+- `apps/demo-playground`

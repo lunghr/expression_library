@@ -3,12 +3,11 @@
   "private": true,
   "version": "0.0.0",
   "workspaces": [
-    "packages/*",
-    "apps/*"
+    "packages/*"
   ],
   "scripts": {
     "build": "tsc -b",
-    "dev:demo": "npm run build --workspace @expression-editor/ui && npm run dev --workspace @expression-editor/demo-playground -- --host 127.0.0.1 --port 4173",
+    "dev:demo": "npm run dev --prefix apps/demo-playground -- --host 127.0.0.1 --port 4173",
     "lint": "eslint .",
     "test:e2e": "playwright test",
     "test:unit": "npm run test --workspace @expression-editor/core && npm run test --workspace @expression-editor/adapters"

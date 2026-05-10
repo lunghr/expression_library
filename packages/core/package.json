@@ -1,6 +1,6 @@
 {
   "name": "@expression-editor/core",
-  "version": "0.0.0",
+  "version": "0.1.0",
   "description": "Headless core layer for the expression editor library.",
   "type": "module",
   "license": "MIT",

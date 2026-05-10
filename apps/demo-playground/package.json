@@ -4,13 +4,13 @@
   "version": "0.0.0",
   "type": "module",
   "scripts": {
-    "build": "tsc -b && vite build",
+    "build": "tsc --noEmit && vite build",
     "dev": "vite"
   },
   "dependencies": {
-    "@expression-editor/adapters": "0.0.0",
-    "@expression-editor/core": "0.0.0",
-    "@expression-editor/ui": "0.0.0"
+    "@expression-editor/adapters": "0.1.0",
+    "@expression-editor/core": "0.1.0",
+    "@expression-editor/ui": "0.1.0"
   },
   "peerDependencies": {
     "react": "^19.2.0",
